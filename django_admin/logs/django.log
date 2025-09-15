@@ -1,0 +1,26 @@
+INFO 2025-09-13 15:02:00,337 autoreload 23956 44428 Watching for file changes with StatReloader
+INFO 2025-09-13 15:02:05,074 autoreload 23956 44428 C:\Users\Predator\PycharmProjects\TranscriptionBot\django_admin\config\settings\base.py changed, reloading.
+INFO 2025-09-13 15:02:05,551 autoreload 10320 38684 Watching for file changes with StatReloader
+INFO 2025-09-13 15:02:43,807 autoreload 10320 38684 C:\Users\Predator\PycharmProjects\TranscriptionBot\django_admin\config\settings\base.py changed, reloading.
+INFO 2025-09-13 15:02:44,273 autoreload 17856 4232 Watching for file changes with StatReloader
+WARNING 2025-09-13 15:02:51,391 base 17856 28408 Session data corrupted
+INFO 2025-09-13 15:02:51,414 basehttp 17856 28408 "GET /admin/auth/user/1/change/ HTTP/1.1" 302 0
+WARNING 2025-09-13 15:02:51,423 base 17856 28408 Session data corrupted
+INFO 2025-09-13 15:02:51,458 basehttp 17856 28408 "GET /admin/login/?next=/admin/auth/user/1/change/ HTTP/1.1" 200 17141
+INFO 2025-09-13 15:02:51,508 basehttp 17856 44348 "GET /static/debug_toolbar/js/toolbar.js HTTP/1.1" 304 0
+INFO 2025-09-13 15:02:51,508 basehttp 17856 28408 "GET /static/debug_toolbar/css/toolbar.css HTTP/1.1" 304 0
+INFO 2025-09-13 15:02:51,533 basehttp 17856 44348 "GET /static/debug_toolbar/css/print.css HTTP/1.1" 304 0
+INFO 2025-09-13 15:02:51,553 basehttp 17856 44348 "GET /static/debug_toolbar/js/utils.js HTTP/1.1" 304 0
+WARNING 2025-09-13 15:02:52,499 base 17856 44348 Session data corrupted
+INFO 2025-09-13 15:02:52,814 basehttp 17856 44348 "POST /admin/login/?next=/admin/auth/user/1/change/ HTTP/1.1" 302 0
+INFO 2025-09-13 15:02:52,925 basehttp 17856 44348 "GET /admin/auth/user/1/change/ HTTP/1.1" 200 34238
+INFO 2025-09-13 15:02:52,983 basehttp 17856 44348 "GET /admin/jsi18n/ HTTP/1.1" 200 3342
+INFO 2025-09-13 15:03:00,446 basehttp 17856 44348 "GET /__debug__/render_panel/?store_id=ff8f55e2870b4b0097352bd927e36da7&panel_id=SettingsPanel HTTP/1.1" 200 29408
+INFO 2025-09-13 18:23:30,234 basehttp 17856 47020 "GET /admin/auth/user/1/change/ HTTP/1.1" 200 34237
+INFO 2025-09-13 18:23:30,285 basehttp 17856 35800 "GET /static/debug_toolbar/js/toolbar.js HTTP/1.1" 304 0
+INFO 2025-09-13 18:23:30,289 basehttp 17856 50828 "GET /static/debug_toolbar/css/toolbar.css HTTP/1.1" 304 0
+INFO 2025-09-13 18:23:30,309 basehttp 17856 47020 "GET /admin/jsi18n/ HTTP/1.1" 200 3342
+INFO 2025-09-13 18:23:30,321 basehttp 17856 47020 "GET /static/debug_toolbar/css/print.css HTTP/1.1" 304 0
+INFO 2025-09-13 18:23:30,327 basehttp 17856 47020 "GET /static/debug_toolbar/js/utils.js HTTP/1.1" 304 0
+INFO 2025-09-15 12:00:10,034 autoreload 1116 40628 Watching for file changes with StatReloader
+INFO 2025-09-15 12:22:12,762 autoreload 38548 44064 Watching for file changes with StatReloader

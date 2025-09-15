@@ -1,0 +1,88 @@
+# Core Python Libraries
+python-dotenv==1.0.1              # Environment variables management
+pydantic==2.8.2                   # Data validation using Python type annotations
+pydantic-settings==2.4.0          # Settings management
+
+# Telegram Bot Framework
+aiogram==3.22.0                   # Telegram Bot API framework
+aiohttp==3.10.5                   # Async HTTP client/server
+aiodns==3.2.0                     # DNS resolver for asyncio
+magic-filter==1.0.12              # Aiogram's filtering system
+
+# Django Framework & Extensions
+Django==5.1.2                     # Web framework
+djangorestframework==3.15.2      # REST API framework
+django-cors-headers==4.4.0       # CORS headers handling
+django-environ==0.11.2            # Environment variables for Django
+django-extensions==3.2.3          # Additional Django management commands
+django-filter==24.3               # Filtering for DRF
+drf-spectacular==0.27.2           # OpenAPI 3.0 schema generation
+
+# Database
+psycopg2==2.9.10           # PostgreSQL adapter
+redis==5.0.8                      # Redis client
+hiredis==3.2.1                    # Redis parser for better performance
+django-redis==5.4.0               # Django cache backend for Redis
+
+# AI & Transcription
+google-generativeai==0.7.2       # Google Gemini API
+google-cloud-speech==2.26.1      # Alternative: Google Speech-to-Text
+openai==1.42.0                    # Alternative: OpenAI Whisper API
+pydub==0.25.1                     # Audio processing
+ffmpeg-python==0.2.0              # FFmpeg wrapper for video/audio processing
+moviepy==1.0.3                    # Video editing (for audio extraction)
+speechrecognition==3.14.3        # Speech recognition library
+
+# Payment Integration
+requests==2.32.3                  # HTTP library for payment APIs
+cryptography==42.0.8              # Encryption for payment security
+pycryptodome==3.20.0             # Cryptographic library
+httpx==0.27.0                     # Modern HTTP client
+
+# File Handling & Storage
+aiofiles==24.1.0                  # Async file operations
+Pillow==10.4.0                    # Image processing
+python-multipart==0.0.9           # File upload handling
+boto3==1.34.158                   # AWS S3 (if using cloud storage)
+
+# Task Queue & Background Jobs
+celery==5.4.0                     # Distributed task queue
+celery[redis]==5.4.0              # Celery with Redis support
+django-celery-beat==2.7.0        # Periodic task management
+django-celery-results==2.5.1     # Store task results in Django DB
+flower==2.0.1                     # Celery monitoring tool
+
+# Utilities
+python-dateutil==2.9.0            # Date utilities
+pytz==2024.1                      # Timezone definitions
+babel==2.16.0                     # Internationalization
+phonenumbers==8.13.42             # Phone number validation
+validators==0.33.0                # Data validation utilities
+
+# Logging & Monitoring
+loguru==0.7.2                     # Better logging
+sentry-sdk==2.13.0                # Error tracking
+python-json-logger==2.0.7        # JSON logging
+
+# Security
+django-ratelimit==4.1.0          # Rate limiting
+django-guardian==2.4.0           # Per-object permissions
+PyJWT==2.9.0                      # JWT tokens
+
+# Data Processing
+pandas==2.3.2                     # Data manipulation
+numpy==2.3.3                     # Numerical computing
+openpyxl==3.1.5                   # Excel file handling
+
+# API Clients Configuration
+urllib3==2.2.2                    # HTTP client
+certifi==2024.7.4                 # SSL certificates
+charset-normalizer==3.3.2        # Character encoding detection
+
+# Django Admin Enhancements
+django-admin-interface==0.28.8   # Modern admin interface
+django-import-export==4.1.0      # Import/export functionality
+django-rangefilter==0.9.1       # Date range filter in admin
+
+# Database Migration & Management
+alembic==1.13.2                   # Database migrations (alternative to Django)

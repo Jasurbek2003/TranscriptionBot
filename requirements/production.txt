@@ -1,0 +1,44 @@
+# Include base requirements
+-r base.txt
+
+# Production Web Server
+gunicorn==22.0.0                  # WSGI HTTP Server
+uvicorn==0.30.6                   # ASGI server
+uvloop==0.20.0                    # Fast event loop
+httptools==0.6.1                  # HTTP parser
+
+# Production Database
+psycopg2==2.9.9                   # Use non-binary version in production
+django-db-pool==2.0.1             # Database connection pooling
+
+# Monitoring & Performance
+newrelic==9.13.0                  # Application monitoring
+django-prometheus==2.3.1         # Prometheus metrics
+elastic-apm==6.23.0               # Elastic APM integration
+scout-apm==3.1.0                  # Alternative APM
+
+# Security Hardening
+django-csp==3.8                   # Content Security Policy
+django-permissions-policy==4.21.0 # Permissions Policy headers
+django-feature-policy==3.12.0    # Feature Policy headers
+
+# Static Files & CDN
+whitenoise==6.7.0                 # Static file serving
+django-storages==1.14.4          # Cloud storage backends
+boto3==1.34.158                   # AWS services
+
+# Caching
+pylibmc==1.6.3                    # Memcached client
+python-memcached==1.62           # Alternative memcached client
+
+# Backup & Maintenance
+django-dbbackup==4.1.0           # Database backup
+schedule==1.2.2                   # Job scheduling
+
+# Production Logging
+python-json-logger==2.0.7        # JSON formatted logs
+django-log-request-id==2.1.0     # Request ID logging
+
+# Load Balancing & Scaling
+circus==0.18.0                    # Process manager
+supervisor==4.2.5                 # Alternative process control

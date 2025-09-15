@@ -1,0 +1,47 @@
+# Include base requirements
+-r base.txt
+
+# Development Tools
+ipython==8.26.0                   # Enhanced Python shell
+ipdb==0.13.13                     # IPython debugger
+django-debug-toolbar==4.4.6      # Debug toolbar for Django
+django-silk==5.1.0                # Profiling Django requests
+
+# Testing
+pytest==8.3.2                     # Testing framework
+pytest-django==4.8.0              # Django testing with pytest
+pytest-asyncio==0.24.0           # Async test support
+pytest-cov==5.0.0                 # Coverage reporting
+pytest-mock==3.14.0               # Mocking for tests
+factory-boy==3.3.0                # Test fixtures
+faker==26.3.0                     # Fake data generation
+responses==0.25.3                 # Mock HTTP responses
+freezegun==1.5.1                  # Mock datetime
+
+# Code Quality
+black==24.8.0                     # Code formatter
+isort==5.13.2                     # Import sorting
+flake8==7.1.1                     # Linting
+mypy==1.11.1                      # Type checking
+pylint==3.2.6                     # Code analysis
+pylint-django==2.5.5              # Django-specific pylint rules
+bandit==1.7.9                     # Security linting
+safety==3.2.5                     # Security vulnerabilities check
+
+# Documentation
+sphinx==7.4.7                     # Documentation generator
+sphinx-rtd-theme==2.0.0          # ReadTheDocs theme
+mkdocs==1.6.0                     # Alternative docs generator
+mkdocs-material==9.5.31          # Material theme for MkDocs
+
+# Development Database Tools
+pgcli==4.1.0                      # PostgreSQL CLI with auto-completion
+django-querycount==0.8.3         # Query counting for optimization
+
+# Debugging
+django-extensions==3.2.3          # Shell plus and other tools
+werkzeug==3.0.3                   # WSGI utility library
+watchdog==4.0.2                   # File system monitoring
+
+# Pre-commit Hooks
+pre-commit==3.8.0                 # Git pre-commit hooks
