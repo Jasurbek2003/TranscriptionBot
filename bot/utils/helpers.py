@@ -2,6 +2,8 @@ import os
 import tempfile
 from pathlib import Path
 from typing import Optional
+from decimal import Decimal
+from datetime import datetime, date
 import aiofiles
 import asyncio
 import logging
@@ -103,3 +105,70 @@ def clean_filename(filename: str) -> str:
     if len(name) > 100:
         name = name[:100]
     return name + ext
+
+
+def format_currency(amount: Decimal, currency: str = "UZS") -> str:
+    """Format currency amount for display."""
+    if currency == "UZS":
+        # Format with thousands separator for UZS
+        return f"{amount:,.0f} UZS"
+    else:
+        # Format with 2 decimal places for other currencies
+        return f"{amount:.2f} {currency}"
+
+
+def format_datetime(dt: datetime) -> str:
+    """Format datetime for display."""
+    from django.utils import timezone
+
+    # Convert to local timezone if needed
+    if dt.tzinfo is None:
+        dt = timezone.make_aware(dt)
+
+    now = timezone.now()
+
+    # If today, show time only
+    if dt.date() == now.date():
+        return dt.strftime("Today %H:%M")
+
+    # If yesterday, show "Yesterday"
+    yesterday = now.date() - timezone.timedelta(days=1)
+    if dt.date() == yesterday:
+        return dt.strftime("Yesterday %H:%M")
+
+    # If this year, show month and day
+    if dt.year == now.year:
+        return dt.strftime("%b %d, %H:%M")
+
+    # Full date
+    return dt.strftime("%b %d, %Y %H:%M")
+
+
+def format_file_size(size_bytes: int) -> str:
+    """Format file size for display."""
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 ** 2:
+        return f"{size_bytes / 1024:.1f} KB"
+    elif size_bytes < 1024 ** 3:
+        return f"{size_bytes / (1024 ** 2):.1f} MB"
+    else:
+        return f"{size_bytes / (1024 ** 3):.1f} GB"
+
+
+def format_duration(seconds: int) -> str:
+    """Format duration in seconds to human readable format."""
+    if seconds < 60:
+        return f"{seconds}s"
+    elif seconds < 3600:
+        minutes = seconds // 60
+        remaining_seconds = seconds % 60
+        if remaining_seconds == 0:
+            return f"{minutes}m"
+        return f"{minutes}m {remaining_seconds}s"
+    else:
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        if minutes == 0:
+            return f"{hours}h"
+        return f"{hours}h {minutes}m"

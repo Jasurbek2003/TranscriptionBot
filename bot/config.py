@@ -1,7 +1,12 @@
-from typing import List, Optional
+"""Bot configuration settings and environment management."""
+
+import os
 from pathlib import Path
-from pydantic_settings import BaseSettings
-from pydantic import Field, validator
+from typing import List, Optional, Union
+from enum import Enum
+
+from pydantic import Field, field_validator, computed_field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -13,130 +18,244 @@ BOT_DIR = BASE_DIR / "bot"
 LOGS_DIR = BASE_DIR / "logs"
 MEDIA_DIR = BASE_DIR / "media"
 
-# Create necessary directories
-LOGS_DIR.mkdir(exist_ok=True)
-MEDIA_DIR.mkdir(exist_ok=True)
-(MEDIA_DIR / "audio").mkdir(exist_ok=True)
-(MEDIA_DIR / "video").mkdir(exist_ok=True)
-(MEDIA_DIR / "transcriptions").mkdir(exist_ok=True)
+
+class LogLevel(str, Enum):
+    """Logging levels enumeration."""
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
+
+
+class Language(str, Enum):
+    """Supported languages enumeration."""
+    ENGLISH = "en"
+    RUSSIAN = "ru"
+    UZBEK = "uz"
+
+
+class Environment(str, Enum):
+    """Application environment types."""
+    DEVELOPMENT = "development"
+    STAGING = "staging"
+    PRODUCTION = "production"
+
+
+def ensure_directories() -> None:
+    """Create necessary directories if they don't exist."""
+    directories = [
+        LOGS_DIR,
+        MEDIA_DIR,
+        MEDIA_DIR / "audio",
+        MEDIA_DIR / "video",
+        MEDIA_DIR / "transcriptions",
+    ]
+
+    for directory in directories:
+        directory.mkdir(parents=True, exist_ok=True)
+
+
+class DatabaseSettings(BaseSettings):
+    """Database configuration settings."""
+
+    host: str = Field(default="localhost", alias="DB_HOST")
+    port: int = Field(default=5432, alias="DB_PORT")
+    name: str = Field(default="transcription_bot", alias="DB_NAME")
+    user: str = Field(default="postgres", alias="DB_USER")
+    password: str = Field(default="postgres", alias="DB_PASSWORD")
+
+    @computed_field
+    @property
+    def url(self) -> str:
+        """Generate database connection URL."""
+        return f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.name}"
+
+
+class RedisSettings(BaseSettings):
+    """Redis configuration settings."""
+
+    host: str = Field(default="localhost", alias="REDIS_HOST")
+    port: int = Field(default=6379, alias="REDIS_PORT")
+    db: int = Field(default=0, alias="REDIS_DB")
+    password: Optional[str] = Field(default=None, alias="REDIS_PASSWORD")
+
+    @computed_field
+    @property
+    def url(self) -> str:
+        """Generate Redis connection URL."""
+        auth_part = f":{self.password}@" if self.password else ""
+        return f"redis://{auth_part}{self.host}:{self.port}/{self.db}"
+
+
+class PaymentSettings(BaseSettings):
+    """Payment gateway configuration settings."""
+
+    # PayMe settings
+    payme_merchant_id: str = Field(default="", alias="PAYME_MERCHANT_ID")
+    payme_secret_key: str = Field(default="", alias="PAYME_SECRET_KEY")
+    payme_test_mode: bool = Field(default=True, alias="PAYME_TEST_MODE")
+
+    # Click settings
+    click_merchant_id: str = Field(default="", alias="CLICK_MERCHANT_ID")
+    click_service_id: str = Field(default="", alias="CLICK_SERVICE_ID")
+    click_secret_key: str = Field(default="", alias="CLICK_SECRET_KEY")
+    click_test_mode: bool = Field(default=True, alias="CLICK_TEST_MODE")
+
+
+class PricingSettings(BaseSettings):
+    """Pricing configuration settings."""
+
+    audio_price_per_min: float = Field(default=100.0, alias="AUDIO_PRICE_PER_MIN", gt=0)
+    video_price_per_min: float = Field(default=150.0, alias="VIDEO_PRICE_PER_MIN", gt=0)
+    initial_balance: float = Field(default=1000.0, alias="INITIAL_BALANCE", ge=0)
+    min_payment_amount: float = Field(default=1000.0, alias="MIN_PAYMENT_AMOUNT", gt=0)
+    max_payment_amount: float = Field(default=1000000.0, alias="MAX_PAYMENT_AMOUNT", gt=0)
+
+    @field_validator("max_payment_amount")
+    @classmethod
+    def validate_max_payment(cls, v: float, info) -> float:
+        """Ensure max payment is greater than min payment."""
+        if hasattr(info.data, 'min_payment_amount') and v <= info.data['min_payment_amount']:
+            raise ValueError("max_payment_amount must be greater than min_payment_amount")
+        return v
+
+
+class AISettings(BaseSettings):
+    """AI service configuration settings."""
+
+    gemini_api_key: str = Field(alias="GEMINI_API_KEY")
+    gemini_model: str = Field(default="gemini-1.5-flash", alias="GEMINI_MODEL")
+    max_audio_duration_seconds: int = Field(default=3600, alias="MAX_AUDIO_DURATION_SECONDS", gt=0)
+    max_video_duration_seconds: int = Field(default=1800, alias="MAX_VIDEO_DURATION_SECONDS", gt=0)
+    max_file_size_mb: int = Field(default=50, alias="MAX_FILE_SIZE_MB", gt=0)
+
+
+class RateLimitSettings(BaseSettings):
+    """Rate limiting configuration settings."""
+
+    time_window: int = Field(default=60, alias="THROTTLE_TIME_WINDOW", gt=0)
+    max_messages: int = Field(default=10, alias="THROTTLE_MAX_MESSAGES", gt=0)
+    max_media: int = Field(default=3, alias="THROTTLE_MAX_MEDIA", gt=0)
+
+
+class WebhookSettings(BaseSettings):
+    """Webhook configuration settings."""
+
+    enabled: bool = Field(default=False, alias="WEBHOOK_ENABLED")
+    host: str = Field(default="", alias="WEBHOOK_HOST")
+    path: str = Field(default="/webhook", alias="WEBHOOK_PATH")
+    port: int = Field(default=8443, alias="WEBHOOK_PORT", ge=1, le=65535)
+    cert: str = Field(default="", alias="WEBHOOK_CERT")
+
+    @computed_field
+    @property
+    def url(self) -> str:
+        """Generate webhook URL."""
+        return f"{self.host}{self.path}"
 
 
 class Settings(BaseSettings):
-    """Bot configuration settings"""
+    """Main application configuration settings."""
 
-    # Bot settings
-    BOT_TOKEN: str = Field(..., env="BOT_TOKEN")
-    BOT_USERNAME: Optional[str] = Field(None, env="BOT_USERNAME")
-    DROP_PENDING_UPDATES: bool = Field(False, env="DROP_PENDING_UPDATES")
-
-    # Admin settings
-    ADMIN_IDS: List[int] = Field(default_factory=list, env="ADMIN_IDS")
-    SUPPORT_CHAT_ID: Optional[str] = Field(None, env="SUPPORT_CHAT_ID")
-    DEVELOPER_CHAT_ID: Optional[int] = Field(None, env="DEVELOPER_CHAT_ID")
-
-    # Database settings
-    DB_HOST: str = Field("localhost", env="DB_HOST")
-    DB_PORT: int = Field(5432, env="DB_PORT")
-    DB_NAME: str = Field("transcription_bot", env="DB_NAME")
-    DB_USER: str = Field("postgres", env="DB_USER")
-    DB_PASSWORD: str = Field("postgres", env="DB_PASSWORD")
-
-    @property
-    def DATABASE_URL(self) -> str:
-        return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
-
-    # Redis settings
-    REDIS_HOST: str = Field("localhost", env="REDIS_HOST")
-    REDIS_PORT: int = Field(6379, env="REDIS_PORT")
-    REDIS_DB: int = Field(0, env="REDIS_DB")
-    REDIS_PASSWORD: Optional[str] = Field(None, env="REDIS_PASSWORD")
-
-    @property
-    def REDIS_URL(self) -> str:
-        if self.REDIS_PASSWORD:
-            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
-        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
-
-    # Payment settings
-    PAYME_MERCHANT_ID: str = Field("", env="PAYME_MERCHANT_ID")
-    PAYME_SECRET_KEY: str = Field("", env="PAYME_SECRET_KEY")
-    PAYME_TEST_MODE: bool = Field(True, env="PAYME_TEST_MODE")
-
-    CLICK_MERCHANT_ID: str = Field("", env="CLICK_MERCHANT_ID")
-    CLICK_SERVICE_ID: str = Field("", env="CLICK_SERVICE_ID")
-    CLICK_SECRET_KEY: str = Field("", env="CLICK_SECRET_KEY")
-    CLICK_TEST_MODE: bool = Field(True, env="CLICK_TEST_MODE")
-
-    # Pricing settings (per minute)
-    AUDIO_PRICE_PER_MIN: float = Field(100.0, env="AUDIO_PRICE_PER_MIN")
-    VIDEO_PRICE_PER_MIN: float = Field(150.0, env="VIDEO_PRICE_PER_MIN")
-    INITIAL_BALANCE: float = Field(1000.0, env="INITIAL_BALANCE")
-    MIN_PAYMENT_AMOUNT: float = Field(1000.0, env="MIN_PAYMENT_AMOUNT")
-    MAX_PAYMENT_AMOUNT: float = Field(1000000.0, env="MAX_PAYMENT_AMOUNT")
-
-    # AI Service settings
-    GEMINI_API_KEY: str = Field("", env="GEMINI_API_KEY")
-    GEMINI_MODEL: str = Field("gemini-1.5-flash", env="GEMINI_MODEL")
-    MAX_AUDIO_DURATION_SECONDS: int = Field(3600, env="MAX_AUDIO_DURATION_SECONDS")  # 1 hour
-    MAX_VIDEO_DURATION_SECONDS: int = Field(1800, env="MAX_VIDEO_DURATION_SECONDS")  # 30 minutes
-    MAX_FILE_SIZE_MB: int = Field(50, env="MAX_FILE_SIZE_MB")
-
-    # Rate limiting
-    THROTTLE_TIME_WINDOW: int = Field(60, env="THROTTLE_TIME_WINDOW")  # seconds
-    THROTTLE_MAX_MESSAGES: int = Field(10, env="THROTTLE_MAX_MESSAGES")
-    THROTTLE_MAX_MEDIA: int = Field(3, env="THROTTLE_MAX_MEDIA")
-
-    # Webhook settings (for production)
-    WEBHOOK_ENABLED: bool = Field(False, env="WEBHOOK_ENABLED")
-    WEBHOOK_HOST: str = Field("", env="WEBHOOK_HOST")
-    WEBHOOK_PATH: str = Field("/webhook", env="WEBHOOK_PATH")
-    WEBHOOK_PORT: int = Field(8443, env="WEBHOOK_PORT")
-    WEBHOOK_CERT: str = Field("", env="WEBHOOK_CERT")
-
-    @property
-    def WEBHOOK_URL(self) -> str:
-        return f"{self.WEBHOOK_HOST}{self.WEBHOOK_PATH}"
-
-    # Feature flags
-    MAINTENANCE_MODE: bool = Field(False, env="MAINTENANCE_MODE")
-    DEBUG_MODE: bool = Field(False, env="DEBUG_MODE")
-    LOG_LEVEL: str = Field("INFO", env="LOG_LEVEL")
-
-    # Localization
-    DEFAULT_LANGUAGE: str = Field("en", env="DEFAULT_LANGUAGE")
-    SUPPORTED_LANGUAGES: List[str] = Field(
-        default_factory=lambda: ["en", "ru", "uz"],
-        env="SUPPORTED_LANGUAGES"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
     )
 
-    @validator("ADMIN_IDS", pre=True)
-    def parse_admin_ids(cls, v):
+    # Environment
+    environment: Environment = Field(default=Environment.DEVELOPMENT, alias="ENVIRONMENT")
+
+    # Bot settings
+    bot_token: str = Field(alias="BOT_TOKEN")
+    bot_username: Optional[str] = Field(default=None, alias="BOT_USERNAME")
+    drop_pending_updates: bool = Field(default=False, alias="DROP_PENDING_UPDATES")
+
+    # Admin settings
+    admin_ids: List[int] = Field(default_factory=list, alias="ADMIN_IDS")
+    support_chat_id: Optional[str] = Field(default=None, alias="SUPPORT_CHAT_ID")
+    developer_chat_id: Optional[int] = Field(default=None, alias="DEVELOPER_CHAT_ID")
+
+    # Feature flags
+    maintenance_mode: bool = Field(default=False, alias="MAINTENANCE_MODE")
+    debug_mode: bool = Field(default=False, alias="DEBUG_MODE")
+    log_level: LogLevel = Field(default=LogLevel.INFO, alias="LOG_LEVEL")
+
+    # Localization
+    default_language: Language = Field(default=Language.ENGLISH, alias="DEFAULT_LANGUAGE")
+    supported_languages: List[Language] = Field(
+        default_factory=lambda: [Language.ENGLISH, Language.RUSSIAN, Language.UZBEK],
+        alias="SUPPORTED_LANGUAGES"
+    )
+
+    # Nested settings
+    database: DatabaseSettings = Field(default_factory=DatabaseSettings)
+    redis: RedisSettings = Field(default_factory=RedisSettings)
+    payment: PaymentSettings = Field(default_factory=PaymentSettings)
+    pricing: PricingSettings = Field(default_factory=PricingSettings)
+    ai: AISettings = Field(default_factory=AISettings)
+    rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
+    webhook: WebhookSettings = Field(default_factory=WebhookSettings)
+
+    @field_validator("admin_ids", mode="before")
+    @classmethod
+    def parse_admin_ids(cls, v: Union[str, List[int]]) -> List[int]:
+        print(v, type(v))
+        """Parse admin IDs from string or list."""
         if isinstance(v, str):
-            return [int(id.strip()) for id in v.split(",") if id.strip()]
-        return v
+            if not v.strip():
+                return []
+            return [int(id.strip()) for id in v.split(",") if id.strip().isdigit()]
+        return v or []
 
-    @validator("SUPPORTED_LANGUAGES", pre=True)
-    def parse_languages(cls, v):
+    @field_validator("supported_languages", mode="before")
+    @classmethod
+    def parse_languages(cls, v: Union[str, List[str]]) -> List[Language]:
+        """Parse supported languages from string or list."""
         if isinstance(v, str):
-            return [lang.strip() for lang in v.split(",") if lang.strip()]
-        return v
+            if not v.strip():
+                return [Language.ENGLISH, Language.RUSSIAN, Language.UZBEK]
+            lang_codes = [lang.strip() for lang in v.split(",") if lang.strip()]
+            return [Language(code) for code in lang_codes if code in Language.__members__.values()]
+        return v or [Language.ENGLISH, Language.RUSSIAN, Language.UZBEK]
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    @computed_field
+    @property
+    def is_production(self) -> bool:
+        """Check if running in production environment."""
+        return self.environment == Environment.PRODUCTION
 
+    @computed_field
+    @property
+    def is_development(self) -> bool:
+        """Check if running in development environment."""
+        return self.environment == Environment.DEVELOPMENT
+
+
+# Initialize directories
+ensure_directories()
 
 # Create settings instance
 settings = Settings()
 
-# Export commonly used values
-BOT_TOKEN = settings.BOT_TOKEN
-DATABASE_URL = settings.DATABASE_URL
-REDIS_URL = settings.REDIS_URL
-ADMIN_IDS = settings.ADMIN_IDS
+# Backward compatibility exports
+BOT_TOKEN = settings.bot_token
+DATABASE_URL = settings.database.url
+REDIS_URL = settings.redis.url
+ADMIN_IDS = settings.admin_ids
 
-# File paths
+# Directory paths
 AUDIO_DIR = MEDIA_DIR / "audio"
 VIDEO_DIR = MEDIA_DIR / "video"
 TRANSCRIPTIONS_DIR = MEDIA_DIR / "transcriptions"
+
+# Expose nested settings for convenience
+db_settings = settings.database
+redis_settings = settings.redis
+payment_settings = settings.payment
+pricing_settings = settings.pricing
+ai_settings = settings.ai
+rate_limit_settings = settings.rate_limit
+webhook_settings = settings.webhook

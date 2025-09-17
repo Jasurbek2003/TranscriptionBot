@@ -1,6 +1,7 @@
 # django_admin/config/settings/base.py
 
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -10,6 +11,9 @@ load_dotenv()
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+# Add project root to Python path so we can import core module
+PROJECT_ROOT = BASE_DIR.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 # Create necessary directories
 LOGS_DIR = BASE_DIR / 'logs'
 LOGS_DIR.mkdir(exist_ok=True)  # This creates the logs directory if it doesn't exist
@@ -144,8 +148,8 @@ MEDIA_ROOT = MEDIA_ROOT
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Custom User Model (uncomment when you create the user app)
-# AUTH_USER_MODEL = 'users.TelegramUser'
+# Custom User Model
+AUTH_USER_MODEL = 'users.TelegramUser'
 
 # REST Framework Configuration
 REST_FRAMEWORK = {

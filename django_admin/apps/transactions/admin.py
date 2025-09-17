@@ -116,7 +116,7 @@ class TransactionAdmin(admin.ModelAdmin):
 
         return format_html(
             '<span style="color: {}; font-weight: bold;">'
-            '{}{:,.2f} UZS</span>',
+            '{}{} UZS</span>',
             color,
             symbol,
             obj.amount

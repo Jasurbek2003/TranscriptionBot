@@ -10,7 +10,10 @@ class TelegramUser(AbstractUser):
     telegram_id = models.BigIntegerField(
         unique=True,
         db_index=True,
-        verbose_name=_("Telegram ID")
+        verbose_name=_("Telegram ID"),
+        help_text=_("Unique Telegram identifier for the user"),
+        null=True,
+        blank=True
     )
     telegram_username = models.CharField(
         max_length=255,

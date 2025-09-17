@@ -169,3 +169,8 @@ class Transaction(models.Model):
     @property
     def is_debit(self):
         return self.type == TransactionType.DEBIT.value
+
+
+
+
+

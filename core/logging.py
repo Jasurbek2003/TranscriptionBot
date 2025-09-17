@@ -229,3 +229,7 @@ def log_error(message: str, exc_info: bool = False, **kwargs):
 def log_critical(message: str, exc_info: bool = False, **kwargs):
     """Log critical message"""
     get_logger('core').critical(message, exc_info=exc_info, extra=kwargs)
+
+
+# Default logger instance for easy importing
+logger = get_logger('core')

@@ -9,6 +9,7 @@ class WalletAdmin(admin.ModelAdmin):
     """Admin configuration for wallets"""
 
     list_display = [
+        'id',
         'user_info',
         'balance_display',
         'currency',
@@ -18,6 +19,8 @@ class WalletAdmin(admin.ModelAdmin):
         'last_transaction_at',
         'created_at'
     ]
+
+
 
     list_filter = [
         'currency',
@@ -34,7 +37,6 @@ class WalletAdmin(admin.ModelAdmin):
     ]
 
     readonly_fields = [
-        'user',
         'total_credited',
         'total_debited',
         'created_at',
@@ -73,7 +75,7 @@ class WalletAdmin(admin.ModelAdmin):
         """Display balance with color"""
         color = 'green' if obj.balance > 0 else 'red'
         return format_html(
-            '<span style="color: {}; font-weight: bold;">{:,.2f}</span>',
+            '<span style="color: {}; font-weight: bold;">{}</span>',
             color,
             obj.balance
         )

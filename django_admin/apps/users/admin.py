@@ -40,17 +40,18 @@ class TelegramUserAdmin(BaseUserAdmin):
     ]
 
     readonly_fields = [
-        'telegram_id',
         'created_at',
         'updated_at',
         'last_activity',
         'total_transcriptions',
-        'total_spent'
+        'total_spent',
+        'wallet_balance',
+        'username',
     ]
 
     fieldsets = (
         (_('Telegram Info'), {
-            'fields': ('telegram_id', 'telegram_username', 'is_bot', 'is_premium')
+            'fields': ('username','telegram_id', 'telegram_username', 'is_bot', 'is_premium')
         }),
         (_('Personal Info'), {
             'fields': ('first_name', 'last_name', 'email', 'phone_number', 'language_code')
@@ -66,6 +67,9 @@ class TelegramUserAdmin(BaseUserAdmin):
         }),
         (_('Important dates'), {
             'fields': ('last_login', 'date_joined', 'created_at', 'updated_at')
+        }),
+        (_('Ballance'), {
+         'fields': ('wallet_balance',)
         }),
     )
 
