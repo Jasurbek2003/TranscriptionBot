@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Transcription History - Transcription Bot{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 20px;">Transcription History</h1>
+
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+    <h3>Your Balance: {{ wallet.balance|default:0|floatformat:2 }} UZS</h3>
+    <p style="opacity: 0.9; margin-top: 10px;">Total Transcriptions: {{ transcriptions|length }}</p>
+</div>
+
+{% if transcriptions %}
+    <div style="display: grid; gap: 20px;">
+    {% for t in transcriptions %}
+        <div style="background: white; border: 1px solid #dee2e6; border-radius: 10px; padding: 20px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                <div>
+                    <h3 style="margin-bottom: 5px;">
+                        {% if t.file_type == 'audio' %}🎵{% else %}🎬{% endif %}
+                        {{ t.file_name|default:"Unnamed File" }}
+                    </h3>
+                    <p style="color: #666; font-size: 14px;">
+                        {{ t.created_at|date:"Y-m-d H:i" }} •
+                        {{ t.file_type|capfirst }} •
+                        {{ t.file_size|filesizeformat }} •
+                        <span class="duration-{{ t.id }}">{{ t.duration_seconds|floatformat:0 }}s</span>
+                    </p>
+                </div>
+                <div style="text-align: right;">
+                    <span style="background: {% if t.status == 'completed' %}#d4edda{% else %}#fff3cd{% endif %};
+                                 color: {% if t.status == 'completed' %}#155724{% else %}#856404{% endif %};
+                                 padding: 5px 15px; border-radius: 20px; font-size: 14px;">
+                        {{ t.status|capfirst }}
+                    </span>
+                    <p style="margin-top: 10px; font-weight: bold; color: #667eea;">
+                        {{ t.cost|floatformat:2 }} UZS
+                    </p>
+                </div>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <p style="white-space: pre-wrap; line-height: 1.6; max-height: 100px; overflow: hidden;">
+                    {{ t.transcription_text|truncatechars:300 }}
+                </p>
+            </div>
+
+            <div style="display: none;" id="full-text-{{ t.id }}">{{ t.transcription_text }}</div>
+
+            <div>
+                <button class="btn" onclick="viewTranscription({{ t.id }})">
+                    View Full Text
+                </button>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+{% else %}
+    <div style="text-align: center; padding: 60px 20px; background: #f8f9fa; border-radius: 10px;">
+        <div style="font-size: 72px; margin-bottom: 20px;">📝</div>
+        <h2 style="margin-bottom: 10px;">No Transcriptions Yet</h2>
+        <p style="color: #666; margin-bottom: 30px;">Start by uploading your first audio or video file!</p>
+        <a href="/upload" class="btn">Upload File</a>
+    </div>
+{% endif %}
+
+<!-- Modal for viewing full transcription -->
+<div id="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; max-width: 800px; width: 90%; max-height: 80%; overflow-y: auto;">
+        <h2 style="margin-bottom: 20px;">Full Transcription</h2>
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <pre id="modal-text" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;"></pre>
+        </div>
+        <div style="display: flex; gap: 15px;">
+            <button class="btn" onclick="downloadModalText()">📥 Download</button>
+            <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentTranscriptionText = '';
+
+    // Format durations on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('[class^="duration-"]').forEach(function(elem) {
+            const seconds = parseInt(elem.textContent);
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            elem.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+        });
+    });
+
+    function viewTranscription(id) {
+        const text = document.getElementById('full-text-' + id).textContent;
+        currentTranscriptionText = text;
+        document.getElementById('modal-text').textContent = text;
+        document.getElementById('modal').style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+    }
+
+    function downloadModalText() {
+        const blob = new Blob([currentTranscriptionText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `transcription_${Date.now()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+</script>
+{% endblock %}

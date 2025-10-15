@@ -55,6 +55,7 @@ LOCAL_APPS = [
     'apps.wallet',
     'apps.transactions',
     'apps.transcriptions',
+    'webapp',
     # 'apps.pricing',
 ]
 
@@ -104,11 +105,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 #     }
 # }
 
-# Or use SQLite for initial development (easier setup)
+# SQLite database - used by both Django and bot
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',  # Main database
+        'OPTIONS': {
+            'timeout': 30,  # Prevent database locking issues
+        }
     }
 }
 
@@ -150,6 +154,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Custom User Model
 AUTH_USER_MODEL = 'users.TelegramUser'
+
+# Login configuration
+LOGIN_URL = '/'  # Redirect to home page for unauthenticated users
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/'
 
 # REST Framework Configuration
 REST_FRAMEWORK = {

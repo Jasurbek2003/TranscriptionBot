@@ -1,13 +1,20 @@
+"""
+Authentication middleware using Django ORM
+
+This middleware handles user registration and authentication using Django models.
+"""
+
 from typing import Callable, Dict, Any, Awaitable
 from datetime import datetime
 from aiogram import BaseMiddleware
 from aiogram.types import Message, CallbackQuery
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from django_admin.apps.users.models import TelegramUser
-from django_admin.apps.wallet.models import Wallet
-from bot.config import settings
+from asgiref.sync import sync_to_async
+from django.utils import timezone
 import logging
+
+# Import Django models
+from bot.django_setup import TelegramUser, Wallet
+from bot.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -29,46 +36,57 @@ class AuthMiddleware(BaseMiddleware):
         if not user_tg:
             return await handler(event, data)
 
-        session: AsyncSession = data.get("session")
-        if not session:
-            return await handler(event, data)
+        # Get or create user (Django ORM)
+        user, wallet = await self._get_or_create_user(user_tg)
 
-        # Check if user exists
-        stmt = select(TelegramUser).where(TelegramUser.telegram_id == user_tg.id)
-        result = await session.execute(stmt)
-        user = result.scalar_one_or_none()
+        # Add user and wallet to data
+        data["user"] = user
+        data["wallet"] = wallet
 
-        # Create new user if doesn't exist
-        if not user:
-            user = TelegramUser(
+        return await handler(event, data)
+
+    @sync_to_async
+    def _get_or_create_user(self, user_tg):
+        """Get or create user and wallet using Django ORM"""
+        try:
+            # Try to get existing user
+            user = TelegramUser.objects.get(telegram_id=user_tg.id)
+
+            # Update last activity
+            user.last_activity = timezone.now()
+            user.save(update_fields=['last_activity'])
+
+            # Get wallet
+            wallet = Wallet.objects.get(user=user)
+
+        except TelegramUser.DoesNotExist:
+            # Create new user
+            user = TelegramUser.objects.create(
                 telegram_id=user_tg.id,
                 username=user_tg.username or f"user_{user_tg.id}",
                 first_name=user_tg.first_name or "",
                 last_name=user_tg.last_name or "",
-                language_code=user_tg.language_code or settings.DEFAULT_LANGUAGE,
+                language_code=user_tg.language_code or settings.default_language.value,
                 is_bot=user_tg.is_bot,
-                is_premium=user_tg.is_premium or False
+                is_premium=user_tg.is_premium or False,
             )
-            session.add(user)
-            await session.flush()
 
             # Create wallet for new user
-            wallet = Wallet(
-                user_id=user.id,
-                balance=settings.INITIAL_BALANCE,
+            wallet = Wallet.objects.create(
+                user=user,
+                balance=settings.pricing.initial_balance,
                 currency="UZS"
             )
-            session.add(wallet)
-            await session.flush()
 
             logger.info(f"New user registered: {user_tg.id} (@{user_tg.username})")
-        else:
-            # Update last activity
-            user.last_activity = datetime.utcnow()
-            await session.flush()
 
-        # Add user to data
-        data["user"] = user
-        data["wallet"] = await user.get_wallet(session)
+        except Wallet.DoesNotExist:
+            # Create wallet if missing (shouldn't happen, but just in case)
+            wallet = Wallet.objects.create(
+                user=user,
+                balance=settings.pricing.initial_balance,
+                currency="UZS"
+            )
+            logger.warning(f"Created missing wallet for user {user.telegram_id}")
 
-        return await handler(event, data)
+        return user, wallet

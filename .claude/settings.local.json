@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(python test:*)",
+      "Bash(python:*)",
+      "Bash(pkill:*)",
+      "Bash(curl:*)",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []

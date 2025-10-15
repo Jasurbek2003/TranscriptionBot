@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome - Transcription Bot{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 50px 20px;">
+    <h1 style="font-size: 48px; margin-bottom: 20px; color: #667eea;">Welcome to Transcription Bot</h1>
+    <p style="font-size: 20px; margin-bottom: 40px; color: #666;">
+        Audio & Video Transcription Service
+    </p>
+
+    <div style="max-width: 600px; margin: 0 auto 40px; text-align: left;">
+        <h2 style="color: #667eea; margin-bottom: 20px;">Features</h2>
+        <ul style="list-style: none; padding: 0;">
+            <li style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                ✅ High-quality AI transcription
+            </li>
+            <li style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                ✅ Support for audio and video files
+            </li>
+            <li style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                ✅ Upload files up to 100 MB
+            </li>
+            <li style="padding: 10px 0; border-bottom: 1px solid #eee;">
+                ✅ Fast processing
+            </li>
+            <li style="padding: 10px 0;">
+                ✅ Secure and private
+            </li>
+        </ul>
+    </div>
+
+    <div class="alert alert-info" style="max-width: 600px; margin: 0 auto 30px;">
+        <strong>📱 Authentication Required</strong><br>
+        To use this web interface, please authenticate through our Telegram bot.<br>
+        The bot will provide you with a secure one-time login link.
+    </div>
+
+    <a href="https://t.me/Test_NJ_bot" class="btn" style="font-size: 18px; padding: 15px 30px;">
+        Open Telegram Bot
+    </a>
+</div>
+{% endblock %}

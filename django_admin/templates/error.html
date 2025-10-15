@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Error - Transcription Bot{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 50px 20px;">
+    <div style="font-size: 72px; margin-bottom: 20px;">❌</div>
+    <h1 style="color: #dc3545; margin-bottom: 20px;">{{ error }}</h1>
+    <p style="font-size: 18px; color: #666; margin-bottom: 40px;">
+        {{ message }}
+    </p>
+    <a href="/" class="btn">Go to Home</a>
+</div>
+{% endblock %}

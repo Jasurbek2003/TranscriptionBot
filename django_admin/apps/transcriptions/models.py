@@ -24,6 +24,12 @@ class Transcription(models.Model):
         choices=[(t.value, t.name) for t in MediaType],
         verbose_name=_("File Type")
     )
+    file_name = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        verbose_name=_("File Name")
+    )
     file_size = models.BigIntegerField(
         null=True,
         blank=True,

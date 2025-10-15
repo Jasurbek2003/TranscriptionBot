@@ -57,19 +57,12 @@ def ensure_directories() -> None:
 
 
 class DatabaseSettings(BaseSettings):
-    """Database configuration settings."""
+    """Database configuration settings - Using Django ORM.
 
-    host: str = Field(default="localhost", alias="DB_HOST")
-    port: int = Field(default=5432, alias="DB_PORT")
-    name: str = Field(default="transcription_bot", alias="DB_NAME")
-    user: str = Field(default="postgres", alias="DB_USER")
-    password: str = Field(default="postgres", alias="DB_PASSWORD")
-
-    @computed_field
-    @property
-    def url(self) -> str:
-        """Generate database connection URL."""
-        return f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.name}"
+    Note: Database settings are now managed by Django.
+    See django_admin/config/settings/base.py for database configuration.
+    """
+    pass
 
 
 class RedisSettings(BaseSettings):
@@ -125,10 +118,10 @@ class AISettings(BaseSettings):
     """AI service configuration settings."""
 
     gemini_api_key: str = Field(alias="GEMINI_API_KEY")
-    gemini_model: str = Field(default="gemini-1.5-flash", alias="GEMINI_MODEL")
+    gemini_model: str = Field(default="gemini-2.5-flash", alias="GEMINI_MODEL")
     max_audio_duration_seconds: int = Field(default=3600, alias="MAX_AUDIO_DURATION_SECONDS", gt=0)
     max_video_duration_seconds: int = Field(default=1800, alias="MAX_VIDEO_DURATION_SECONDS", gt=0)
-    max_file_size_mb: int = Field(default=50, alias="MAX_FILE_SIZE_MB", gt=0)
+    max_file_size_mb: int = Field(default=100, alias="MAX_FILE_SIZE_MB", gt=0)
 
 
 class RateLimitSettings(BaseSettings):
@@ -172,6 +165,11 @@ class Settings(BaseSettings):
     bot_token: str = Field(alias="BOT_TOKEN")
     bot_username: Optional[str] = Field(default=None, alias="BOT_USERNAME")
     drop_pending_updates: bool = Field(default=False, alias="DROP_PENDING_UPDATES")
+    bot_api_server: Optional[str] = Field(default=None, alias="BOT_API_SERVER")  # Custom Bot API Server URL
+
+    # Web app settings
+    web_app_url: str = Field(default="http://127.0.0.1:8000", alias="WEB_APP_URL")
+    web_secret_key: Optional[str] = Field(default=None, alias="WEB_SECRET_KEY")
 
     # Admin settings
     admin_ids: List[int] = Field(default_factory=list, alias="ADMIN_IDS")
@@ -233,6 +231,16 @@ class Settings(BaseSettings):
         """Check if running in development environment."""
         return self.environment == Environment.DEVELOPMENT
 
+    @computed_field
+    @property
+    def max_downloadable_file_size(self) -> int:
+        """Get maximum downloadable file size in bytes based on Bot API server type."""
+        # Custom Bot API server supports up to configured max_file_size_mb
+        # Standard Telegram Bot API only supports up to 20MB
+        if self.bot_api_server:
+            return self.ai.max_file_size_mb * 1024 * 1024
+        return 20 * 1024 * 1024  # 20MB for standard Telegram Bot API
+
 
 # Initialize directories
 ensure_directories()
@@ -242,7 +250,7 @@ settings = Settings()
 
 # Backward compatibility exports
 BOT_TOKEN = settings.bot_token
-DATABASE_URL = settings.database.url
+# DATABASE_URL is now managed by Django - see django_admin/config/settings/base.py
 REDIS_URL = settings.redis.url
 ADMIN_IDS = settings.admin_ids
 

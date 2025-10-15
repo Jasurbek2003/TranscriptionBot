@@ -100,6 +100,20 @@ class Transaction(models.Model):
         verbose_name=_("Metadata")
     )
 
+    # Payment gateway info (for bot compatibility)
+    gateway = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        verbose_name=_("Payment Gateway")
+    )
+    gateway_transaction_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        verbose_name=_("Gateway Transaction ID")
+    )
+
     # Processing info
     processed_at = models.DateTimeField(
         null=True,
@@ -122,6 +136,7 @@ class Transaction(models.Model):
     )
 
     class Meta:
+        app_label = 'transactions'
         db_table = 'transactions'
         verbose_name = _("Transaction")
         verbose_name_plural = _("Transactions")

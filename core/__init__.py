@@ -1,12 +1,9 @@
-from .database import (
-    Base,
-    # DatabaseManager,
-    # db_manager,
-    init_database,
-    close_database,
-    get_session,
-    # DatabaseUtils
-)
+"""
+Core module - Shared utilities, constants, and exceptions.
+
+This module provides common functionality used across the bot and services.
+Database models are now in Django (django_admin/apps/*/models.py).
+"""
 
 from .exceptions import (
     BaseError,
@@ -17,7 +14,10 @@ from .exceptions import (
     AuthenticationError,
     ValidationError,
     ServiceError,
-    BusinessLogicError
+    BusinessLogicError,
+    InsufficientBalanceError,
+    RecordNotFoundError,
+    DuplicateRecordError,
 )
 
 from .constants import (
@@ -30,7 +30,7 @@ from .constants import (
     MIN_PAYMENT_AMOUNT,
     MAX_PAYMENT_AMOUNT,
     AUDIO_PRICE_PER_MINUTE,
-    VIDEO_PRICE_PER_MINUTE
+    VIDEO_PRICE_PER_MINUTE,
 )
 
 from .enums import (
@@ -43,18 +43,8 @@ from .enums import (
     MediaType,
     Language,
     Priority,
-    CacheKeys
-)
-
-from .models import (
-    BaseModel,
-    ExtendedBaseModel,
-    TimestampMixin,
-    SoftDeleteMixin,
-    UUIDMixin,
-    MetadataMixin,
-    AuditMixin,
-    StatusMixin, Base
+    CacheKeys,
+    QualityLevel,
 )
 
 from .utils import (
@@ -64,21 +54,12 @@ from .utils import (
     ValidationUtils,
     MoneyUtils,
     JsonUtils,
-    FileUtils
+    FileUtils,
 )
 
-from .logging import setup_logging, get_logger
+from .logging import setup_logging, get_logger, logger
 
 __all__ = [
-    # Database
-    "Base",
-    # "DatabaseManager",
-    # "db_manager",
-    "init_database",
-    "close_database",
-    "get_session",
-    # "DatabaseUtils",
-
     # Exceptions
     "BaseError",
     "DatabaseError",
@@ -89,10 +70,21 @@ __all__ = [
     "ValidationError",
     "ServiceError",
     "BusinessLogicError",
+    "InsufficientBalanceError",
+    "RecordNotFoundError",
+    "DuplicateRecordError",
 
     # Constants
     "NotificationTypes",
     "ErrorCodes",
+    "ALLOWED_AUDIO_EXTENSIONS",
+    "ALLOWED_VIDEO_EXTENSIONS",
+    "MAX_AUDIO_SIZE",
+    "MAX_VIDEO_SIZE",
+    "MIN_PAYMENT_AMOUNT",
+    "MAX_PAYMENT_AMOUNT",
+    "AUDIO_PRICE_PER_MINUTE",
+    "VIDEO_PRICE_PER_MINUTE",
 
     # Enums
     "UserRole",
@@ -105,16 +97,7 @@ __all__ = [
     "Language",
     "Priority",
     "CacheKeys",
-
-    # Models
-    "BaseModel",
-    "ExtendedBaseModel",
-    "TimestampMixin",
-    "SoftDeleteMixin",
-    "UUIDMixin",
-    "MetadataMixin",
-    "AuditMixin",
-    "StatusMixin",
+    "QualityLevel",
 
     # Utils
     "SecurityUtils",
@@ -127,7 +110,8 @@ __all__ = [
 
     # Logging
     "setup_logging",
-    "get_logger"
+    "get_logger",
+    "logger",
 ]
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"

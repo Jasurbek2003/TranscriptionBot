@@ -5,7 +5,9 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # Add your app URLs here
+    # Web interface
+    path('', include('webapp.urls')),
+    # API URLs
     path('api/users/', include('apps.users.urls')),
     path('api/wallet/', include('apps.wallet.urls')),
     path('api/transactions/', include('apps.transactions.urls')),

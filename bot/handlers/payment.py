@@ -1,7 +1,13 @@
+"""
+Payment handlers - Currently disabled and needs refactoring to Django ORM.
+
+This module uses SQLAlchemy-style queries that need to be converted to Django ORM.
+The router is commented out in main.py until the migration is complete.
+"""
+
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
-from sqlalchemy.ext.asyncio import AsyncSession
 from decimal import Decimal
 import logging
 import uuid
@@ -16,8 +22,8 @@ from bot.keyboards.main_menu import get_cancel_keyboard
 from bot.config import settings
 from services.payment.payme_service import PaymeService
 from services.payment.click_service import ClickService
-from services.payment.wallet_service import WalletService
-from django_admin.apps.transactions.models import Transaction
+# from services.payment.wallet_service import WalletService
+# from django_admin.apps.transactions.models import Transaction
 
 logger = logging.getLogger(__name__)
 
@@ -171,14 +177,22 @@ async def process_payment(
     data = await state.get_data()
     payment_method = data.get("payment_method")
 
+    # Get or create wallet
+    from services.wallet_service import WalletService
+    wallet_service = WalletService(session)
+    wallet = await wallet_service.get_or_create_wallet(user)
+
     # Generate transaction ID
     transaction_id = str(uuid.uuid4())
 
     # Create pending transaction
     transaction = Transaction(
         user_id=user.id,
+        wallet_id=wallet.id,
         type="credit",
         amount=Decimal(str(amount)),
+        balance_before=wallet.balance,
+        balance_after=wallet.balance,  # Will be updated when payment is confirmed
         payment_method=payment_method,
         status="pending",
         reference_id=transaction_id,

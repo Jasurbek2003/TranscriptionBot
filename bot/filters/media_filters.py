@@ -16,7 +16,7 @@ class AudioFilter(Filter):
 
     def __init__(self, check_duration: bool = True, max_duration: int = None):
         self.check_duration = check_duration
-        self.max_duration = max_duration or settings.MAX_AUDIO_DURATION_SECONDS
+        self.max_duration = max_duration or settings.ai.max_audio_duration_seconds
 
     async def __call__(self, message: Message) -> Union[bool, Dict[str, Any]]:
         if not (message.audio or message.voice):
@@ -40,7 +40,7 @@ class VideoFilter(Filter):
 
     def __init__(self, check_duration: bool = True, max_duration: int = None):
         self.check_duration = check_duration
-        self.max_duration = max_duration or settings.MAX_VIDEO_DURATION_SECONDS
+        self.max_duration = max_duration or settings.ai.max_video_duration_seconds
 
     async def __call__(self, message: Message) -> Union[bool, Dict[str, Any]]:
         if not (message.video or message.video_note):
@@ -63,7 +63,7 @@ class FileSizeFilter(Filter):
     """Filter for checking file size"""
 
     def __init__(self, max_size_mb: int = None):
-        self.max_size_bytes = (max_size_mb or settings.MAX_FILE_SIZE_MB) * 1024 * 1024
+        self.max_size_bytes = (max_size_mb or settings.ai.max_file_size_mb) * 1024 * 1024
 
     async def __call__(self, message: Message) -> bool:
         media = message.audio or message.video or message.voice or message.video_note
@@ -72,6 +72,50 @@ class FileSizeFilter(Filter):
             return False
 
         if media.file_size and media.file_size > self.max_size_bytes:
+            return False
+
+        return True
+
+
+class BalanceFilter(Filter):
+    """Filter to check if user has sufficient balance for transcription"""
+
+    async def __call__(self, message: Message, user, wallet) -> Union[bool, Dict[str, Any]]:
+        """
+        Check if user has sufficient balance
+        Note: user and wallet are injected by the auth middleware
+        """
+        if not user or not wallet:
+            await message.answer(
+                "❌ <b>Authentication Error</b>\n\n"
+                "Please restart the bot with /start to authenticate."
+            )
+            return False
+
+        # Get media info
+        media = message.audio or message.video or message.voice or message.video_note
+        if not media:
+            return False
+
+        # Determine media type and calculate minimum cost
+        if message.audio or message.voice:
+            media_type = "audio"
+            price_per_min = settings.pricing.audio_price_per_min
+        else:
+            media_type = "video"
+            price_per_min = settings.pricing.video_price_per_min
+
+        # Calculate minimum cost (1 minute)
+        min_cost = price_per_min
+
+        # Check balance
+        if wallet.balance < min_cost:
+            await message.answer(
+                f"❌ <b>Insufficient Balance</b>\n\n"
+                f"Minimum required: {min_cost:.2f} UZS\n"
+                f"Your balance: {wallet.balance:.2f} UZS\n\n"
+                f"Please use /topup to add funds to your account."
+            )
             return False
 
         return True

@@ -38,7 +38,7 @@ async def set_bot_commands(bot: Bot):
         )
 
         # Set admin commands for admin users
-        for admin_id in settings.ADMIN_IDS:
+        for admin_id in settings.admin_ids:
             try:
                 await bot.set_my_commands(
                     commands=admin_commands,

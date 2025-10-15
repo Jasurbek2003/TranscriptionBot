@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Upload File - Transcription Bot{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-area {
+        border: 3px dashed #667eea;
+        border-radius: 10px;
+        padding: 60px 20px;
+        text-align: center;
+        background: #f8f9fa;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 30px;
+    }
+
+    .upload-area:hover {
+        background: #e8f4f8;
+        border-color: #5568d3;
+    }
+
+    .upload-area.dragover {
+        background: #d1ecf1;
+        border-color: #5568d3;
+    }
+
+    #file-input {
+        display: none;
+    }
+
+    .file-info {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+        display: none;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 30px;
+        background: #e9ecef;
+        border-radius: 15px;
+        overflow: hidden;
+        margin-top: 20px;
+        display: none;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        width: 0%;
+        transition: width 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+    }
+
+    .result-area {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 20px;">Upload File</h1>
+
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+    <h3>Your Balance: {{ wallet.balance|default:0|floatformat:2 }} UZS</h3>
+    <p style="opacity: 0.9; margin-top: 10px;">
+        Audio: {{ settings.pricing.audio_price_per_min|floatformat:0 }} UZS/min •
+        Video: {{ settings.pricing.video_price_per_min|floatformat:0 }} UZS/min
+    </p>
+</div>
+
+<form id="upload-form">
+    <div class="upload-area" id="upload-area">
+        <div style="font-size: 48px; margin-bottom: 20px;">📤</div>
+        <h2 style="margin-bottom: 10px;">Drop your file here or click to browse</h2>
+        <p style="color: #666; margin-bottom: 20px;">
+            Supported formats: MP3, WAV, OGG, M4A, MP4, AVI, MOV, MKV
+        </p>
+        <p style="color: #666; font-size: 14px;">
+            Max file size: {{ max_file_size_mb }} MB •
+            Max duration: {{ max_audio_duration_min }} min (audio), {{ max_video_duration_min }} min (video)
+        </p>
+        <input type="file" id="file-input" name="file" accept="audio/*,video/*">
+    </div>
+</form>
+
+<div class="file-info" id="file-info">
+    <h3>Selected File:</h3>
+    <p id="file-name"></p>
+    <p id="file-size"></p>
+    <button class="btn" id="upload-btn" onclick="uploadFile()">Start Transcription</button>
+    <button class="btn btn-secondary" onclick="resetUpload()">Cancel</button>
+</div>
+
+<div class="progress-bar" id="progress-bar">
+    <div class="progress-fill" id="progress-fill">0%</div>
+</div>
+
+<div class="result-area" id="result-area">
+    <h2 style="margin-bottom: 20px;">✅ Transcription Complete!</h2>
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+        <h3 style="margin-bottom: 10px;">Transcription:</h3>
+        <pre id="transcription-text" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;"></pre>
+    </div>
+    <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <p><strong>Cost:</strong> <span id="cost"></span> UZS</p>
+        <p><strong>New Balance:</strong> <span id="new-balance"></span> UZS</p>
+    </div>
+    <div>
+        <button class="btn" onclick="downloadTranscription()">📥 Download</button>
+        <button class="btn btn-secondary" onclick="resetUpload()">Upload Another</button>
+    </div>
+</div>
+
+<script>
+    let selectedFile = null;
+    let transcriptionData = null;
+
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('file-input');
+    const fileInfo = document.getElementById('file-info');
+    const progressBar = document.getElementById('progress-bar');
+    const progressFill = document.getElementById('progress-fill');
+    const resultArea = document.getElementById('result-area');
+
+    // Get CSRF token from cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+    // Click to upload
+    uploadArea.addEventListener('click', () => fileInput.click());
+
+    // File selection
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFile(e.target.files[0]);
+        }
+    });
+
+    // Drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    function handleFile(file) {
+        selectedFile = file;
+        document.getElementById('file-name').textContent = file.name;
+        document.getElementById('file-size').textContent = `Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+        fileInfo.style.display = 'block';
+        uploadArea.style.display = 'none';
+    }
+
+    async function uploadFile() {
+        if (!selectedFile) return;
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        fileInfo.style.display = 'none';
+        progressBar.style.display = 'block';
+        progressFill.style.width = '50%';
+        progressFill.textContent = 'Processing...';
+
+        try {
+            const response = await fetch('/api/upload/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken
+                },
+                body: formData
+            });
+
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Server returned invalid response. Please check your authentication.');
+            }
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || data.detail || 'Upload failed');
+            }
+
+            progressFill.style.width = '100%';
+            progressFill.textContent = '100%';
+
+            transcriptionData = data;
+            document.getElementById('transcription-text').textContent = data.transcription_text;
+            document.getElementById('cost').textContent = data.cost.toFixed(2);
+            document.getElementById('new-balance').textContent = data.new_balance.toFixed(2);
+
+            setTimeout(() => {
+                progressBar.style.display = 'none';
+                resultArea.style.display = 'block';
+            }, 500);
+
+        } catch (error) {
+            alert('Error: ' + error.message);
+            resetUpload();
+        }
+    }
+
+    function downloadTranscription() {
+        if (!transcriptionData) return;
+
+        const blob = new Blob([transcriptionData.transcription_text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `transcription_${Date.now()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function resetUpload() {
+        selectedFile = null;
+        transcriptionData = null;
+        fileInput.value = '';
+        fileInfo.style.display = 'none';
+        progressBar.style.display = 'none';
+        resultArea.style.display = 'none';
+        uploadArea.style.display = 'block';
+        progressFill.style.width = '0%';
+        progressFill.textContent = '0%';
+    }
+</script>
+{% endblock %}

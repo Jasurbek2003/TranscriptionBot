@@ -1,7 +1,12 @@
+"""
+History handlers - Currently disabled and needs refactoring to Django ORM.
+
+This module uses SQLAlchemy-style queries that need to be converted to Django ORM.
+The router is commented out in main.py until the migration is complete.
+"""
+
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func
 import logging
 
 from bot.keyboards.inline_keyboards import get_pagination_keyboard

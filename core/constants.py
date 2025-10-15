@@ -21,9 +21,9 @@ VIDEO_MIME_TYPES: Final[set] = {
 }
 
 # Size Limits (in bytes)
-MAX_AUDIO_SIZE: Final[int] = 50 * 1024 * 1024  # 50 MB
-MAX_VIDEO_SIZE: Final[int] = 100 * 1024 * 1024  # 100 MB
-MAX_DOCUMENT_SIZE: Final[int] = 10 * 1024 * 1024  # 10 MB
+MAX_AUDIO_SIZE: Final[int] = 100 * 1024 * 1024  # 100 MB
+MAX_VIDEO_SIZE: Final[int] = 300 * 1024 * 1024  # 300 MB
+MAX_DOCUMENT_SIZE: Final[int] = 20 * 1024 * 1024  # 20 MB
 
 # Duration Limits (in seconds)
 MAX_AUDIO_DURATION: Final[int] = 3600  # 1 hour
