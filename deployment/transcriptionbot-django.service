@@ -1,0 +1,46 @@
+[Unit]
+Description=TranscriptionBot Django Web Application (Gunicorn)
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/TranscriptionBot/django_admin
+Environment="PATH=/var/www/TranscriptionBot/.venv/bin"
+Environment="PYTHONPATH=/var/www/TranscriptionBot"
+Environment="DJANGO_SETTINGS_MODULE=config.settings.production"
+EnvironmentFile=/var/www/TranscriptionBot/.env
+
+ExecStart=/var/www/TranscriptionBot/.venv/bin/gunicorn \
+    --config /var/www/TranscriptionBot/deployment/gunicorn_config.py \
+    --workers 3 \
+    --bind 127.0.0.1:8000 \
+    config.wsgi:application
+
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+
+# Restart configuration
+Restart=always
+RestartSec=10
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=transcriptionbot-django
+
+# Security and resource limits
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/TranscriptionBot/django_admin/media /var/www/TranscriptionBot/django_admin/staticfiles /var/www/TranscriptionBot/logs /var/run/transcriptionbot
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

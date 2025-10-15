@@ -1,0 +1,37 @@
+[Unit]
+Description=TranscriptionBot Telegram Bot Service
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/TranscriptionBot/bot
+Environment="PATH=/var/www/TranscriptionBot/.venv/bin"
+Environment="PYTHONPATH=/var/www/TranscriptionBot"
+EnvironmentFile=/var/www/TranscriptionBot/.env
+
+ExecStart=/var/www/TranscriptionBot/.venv/bin/python /var/www/TranscriptionBot/bot/main.py
+
+# Restart configuration
+Restart=always
+RestartSec=10
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=transcriptionbot-telegram
+
+# Security and resource limits
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/TranscriptionBot/media /var/www/TranscriptionBot/logs
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
