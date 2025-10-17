@@ -138,7 +138,7 @@ class TelegramUser(AbstractUser):
 
     async def get_wallet(self, session=None):
         """Get user's wallet"""
-        from django_admin.apps.wallet.models import Wallet
+        from apps.wallet.models import Wallet
         return await Wallet.objects.aget(user=self)
 
     def block(self):

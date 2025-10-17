@@ -7683,3 +7683,65 @@ INFO 2025-10-14 19:18:55,284 basehttp 62004 62204 "GET / HTTP/1.1" 200 17733
 INFO 2025-10-14 19:18:58,214 basehttp 62004 62204 "GET / HTTP/1.1" 200 17732
 INFO 2025-10-14 19:19:13,816 dispatcher 62116 61156 Update id=690604627 is handled. Duration 394 ms by bot id=5376493009
 INFO 2025-10-14 19:19:18,896 dispatcher 62116 61156 Update id=690604628 is handled. Duration 140 ms by bot id=5376493009
+INFO 2025-10-17 18:11:43,233 autoreload 59412 72304 Watching for file changes with StatReloader
+INFO 2025-10-17 18:12:15,703 basehttp 59412 36208 "GET / HTTP/1.1" 200 17730
+INFO 2025-10-17 18:12:26,917 basehttp 59412 36208 "GET /admin/login/?next=/admin/ HTTP/1.1" 200 16700
+INFO 2025-10-17 18:12:28,359 basehttp 59412 36208 "POST /admin/login/?next=/admin/ HTTP/1.1" 302 0
+INFO 2025-10-17 18:12:28,465 basehttp 59412 36208 "GET /admin/ HTTP/1.1" 200 25240
+INFO 2025-10-17 18:12:30,057 basehttp 59412 36208 "GET /admin/wallet/wallet/ HTTP/1.1" 200 30336
+INFO 2025-10-17 18:12:30,125 basehttp 59412 36208 "GET /admin/jsi18n/ HTTP/1.1" 200 3342
+ERROR 2025-10-17 18:12:35,492 log 59412 36208 Internal Server Error: /admin/wallet/wallet/
+Traceback (most recent call last):
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\.venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\.venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\.venv\Lib\site-packages\django\contrib\admin\options.py", line 718, in wrapper
+    return self.admin_site.admin_view(view)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\.venv\Lib\site-packages\django\utils\decorators.py", line 188, in _view_wrapper
+    result = _process_exception(request, e)
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\.venv\Lib\site-packages\django\utils\decorators.py", line 186, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\.venv\Lib\site-packages\django\views\decorators\cache.py", line 80, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\.venv\Lib\site-packages\django\contrib\admin\sites.py", line 241, in inner
+    return view(request, *args, **kwargs)
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\.venv\Lib\site-packages\django\utils\decorators.py", line 48, in _wrapper
+    return bound_method(*args, **kwargs)
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\.venv\Lib\site-packages\django\utils\decorators.py", line 188, in _view_wrapper
+    result = _process_exception(request, e)
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\.venv\Lib\site-packages\django\utils\decorators.py", line 186, in _view_wrapper
+    response = view_func(request, *args, **kwargs)
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\.venv\Lib\site-packages\django\contrib\admin\options.py", line 2034, in changelist_view
+    response = self.response_action(
+        request, queryset=cl.get_queryset(request)
+    )
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\.venv\Lib\site-packages\django\contrib\admin\options.py", line 1666, in response_action
+    response = func(self, request, queryset)
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\django_admin\apps\wallet\admin.py", line 121, in add_bonus
+    wallet.add_balance(bonus_amount, "Admin bonus")
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\django_admin\apps\wallet\models.py", line 100, in add_balance
+    from django_admin.apps.transactions.models import Transaction
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\django_admin\apps\transactions\models.py", line 8, in <module>
+    class Transaction(models.Model):
+    ...<177 lines>...
+            return self.type == TransactionType.DEBIT.value
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\.venv\Lib\site-packages\django\db\models\base.py", line 366, in __new__
+    new_class._meta.apps.register_model(new_class._meta.app_label, new_class)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Predator\PycharmProjects\TranscriptionBot\.venv\Lib\site-packages\django\apps\registry.py", line 234, in register_model
+    raise RuntimeError(
+    ...<2 lines>...
+    )
+RuntimeError: Conflicting 'transaction' models in application 'transactions': <class 'apps.transactions.models.Transaction'> and <class 'django_admin.apps.transactions.models.Transaction'>.
+ERROR 2025-10-17 18:12:35,516 basehttp 59412 36208 "POST /admin/wallet/wallet/ HTTP/1.1" 500 186453
+INFO 2025-10-17 18:17:04,991 autoreload 59412 72304 C:\Users\Predator\PycharmProjects\TranscriptionBot\django_admin\apps\wallet\models.py changed, reloading.
+INFO 2025-10-17 18:17:05,782 autoreload 67056 7896 Watching for file changes with StatReloader
+INFO 2025-10-17 18:17:16,268 autoreload 67056 7896 C:\Users\Predator\PycharmProjects\TranscriptionBot\django_admin\apps\wallet\models.py changed, reloading.
+INFO 2025-10-17 18:17:16,986 autoreload 24316 49628 Watching for file changes with StatReloader
+INFO 2025-10-17 18:17:25,214 autoreload 24316 49628 C:\Users\Predator\PycharmProjects\TranscriptionBot\django_admin\apps\wallet\models.py changed, reloading.
+INFO 2025-10-17 18:17:25,936 autoreload 51716 33016 Watching for file changes with StatReloader
+INFO 2025-10-17 18:18:26,984 autoreload 51716 33016 C:\Users\Predator\PycharmProjects\TranscriptionBot\django_admin\apps\users\models.py changed, reloading.
+INFO 2025-10-17 18:18:27,731 autoreload 37164 7200 Watching for file changes with StatReloader

@@ -97,7 +97,7 @@ class Wallet(models.Model):
         self.save(update_fields=['balance', 'total_credited', 'updated_at'])
 
         # Create transaction record
-        from django_admin.apps.transactions.models import Transaction
+        from apps.transactions.models import Transaction
         Transaction.objects.create(
             user=self.user,
             wallet=self,
@@ -126,7 +126,7 @@ class Wallet(models.Model):
         self.save(update_fields=['balance', 'total_debited', 'updated_at'])
 
         # Create transaction record
-        from django_admin.apps.transactions.models import Transaction
+        from apps.transactions.models import Transaction
         Transaction.objects.create(
             user=self.user,
             wallet=self,
@@ -147,7 +147,7 @@ class Wallet(models.Model):
         """Get amount spent today"""
         from django.utils import timezone
         from django.db.models import Sum
-        from django_admin.apps.transactions.models import Transaction
+        from apps.transactions.models import Transaction
 
         today = timezone.now().date()
         spent = Transaction.objects.filter(
@@ -163,7 +163,7 @@ class Wallet(models.Model):
         """Get amount spent this month"""
         from django.utils import timezone
         from django.db.models import Sum
-        from django_admin.apps.transactions.models import Transaction
+        from apps.transactions.models import Transaction
 
         now = timezone.now()
         spent = Transaction.objects.filter(
