@@ -12,7 +12,7 @@ DEBUG = False
 SECRET_KEY = os.environ.get('SECRET_KEY', 'change-this-in-production')
 
 # Update allowed hosts for production
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'transcription.avlo.ai').split(',')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'transcription.avlo.ai,www.transcription.avlo.ai').split(',')
 
 # Security settings for production
 SECURE_BROWSER_XSS_FILTER = True
