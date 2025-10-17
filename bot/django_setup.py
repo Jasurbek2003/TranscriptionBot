@@ -19,7 +19,7 @@ sys.path.insert(0, str(DJANGO_DIR))
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # Set Django settings module
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.production')
 
 # Setup Django
 import django
