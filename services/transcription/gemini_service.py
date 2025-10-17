@@ -46,11 +46,43 @@ class GeminiTranscriptionService(BaseTranscriptionService):
                 # Upload file to Gemini with proper configuration
                 logger.info("Uploading file to Gemini API...")
 
-                # Use simpler upload without RAG storage
-                uploaded_file = await asyncio.to_thread(
-                    genai.upload_file,
-                    str(tmp_path)
-                )
+                # Try upload with compatibility for different library versions
+                try:
+                    # Try newer API (0.8.0+)
+                    uploaded_file = await asyncio.to_thread(
+                        genai.upload_file,
+                        str(tmp_path)
+                    )
+                except (TypeError, AttributeError) as e:
+                    # Fallback for older API (0.7.x) - use Blob API
+                    logger.info(f"Using Blob API for older library version: {e}")
+
+                    from google.generativeai.types import Blob
+
+                    with open(tmp_path, 'rb') as f:
+                        file_data = f.read()
+
+                    # Create a Blob object
+                    blob = Blob(
+                        mime_type=self._get_mime_type(media_type),
+                        data=file_data
+                    )
+
+                    prompt = """
+                    Please transcribe the audio/video content in this file.
+                    Provide only the transcribed text without any additional commentary or formatting.
+                    If there are multiple speakers, indicate speaker changes with [Speaker 1], [Speaker 2], etc.
+                    """
+
+                    # Generate content with blob
+                    response = await asyncio.to_thread(
+                        self.model.generate_content,
+                        [prompt, blob]
+                    )
+
+                    transcription_text = response.text.strip()
+                    logger.info(f"Transcription completed successfully ({len(transcription_text)} characters)")
+                    return transcription_text
 
                 # Wait for processing
                 while uploaded_file.state.name == "PROCESSING":
