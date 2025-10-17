@@ -5,8 +5,8 @@ Wants=postgresql.service redis.service
 
 [Service]
 Type=notify
-User=www-data
-Group=www-data
+User=company
+Group=company
 WorkingDirectory=/opt/applications/projects/TranscriptionBot/TranscriptionBot/django_admin
 Environment="PATH=/opt/applications/projects/TranscriptionBot/TranscriptionBot/.venv/bin"
 Environment="PYTHONPATH=/opt/applications/projects/TranscriptionBot/TranscriptionBot/"
