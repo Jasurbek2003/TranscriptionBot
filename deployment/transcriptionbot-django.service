@@ -39,7 +39,7 @@ SyslogIdentifier=transcriptionbot-django
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=/opt/applications/projects/TranscriptionBot/TranscriptionBot/django_admin/media /opt/applications/projects/TranscriptionBot/TranscriptionBot/django_admin/staticfiles /opt/applications/projects/TranscriptionBot/TranscriptionBot/logs /var/run/transcriptionbot
+ReadWritePaths=/opt/applications/projects/TranscriptionBot/TranscriptionBot/django_admin/media /opt/applications/projects/TranscriptionBot/TranscriptionBot/django_admin/staticfiles /opt/applications/projects/TranscriptionBot/TranscriptionBot/django_admin/logs /opt/applications/projects/TranscriptionBot/TranscriptionBot/logs /var/run/transcriptionbot
 LimitNOFILE=65536
 
 [Install]

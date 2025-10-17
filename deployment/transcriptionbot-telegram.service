@@ -30,7 +30,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=read-only
-ReadWritePaths=/opt/applications/projects/TranscriptionBot/TranscriptionBot/media /opt/applications/projects/TranscriptionBot/TranscriptionBot/logs
+ReadWritePaths=/opt/applications/projects/TranscriptionBot/TranscriptionBot/media /opt/applications/projects/TranscriptionBot/TranscriptionBot/logs /opt/applications/projects/TranscriptionBot/TranscriptionBot/django_admin/logs
 LimitNOFILE=65536
 
 [Install]
