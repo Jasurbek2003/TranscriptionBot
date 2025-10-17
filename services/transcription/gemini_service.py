@@ -43,14 +43,19 @@ class GeminiTranscriptionService(BaseTranscriptionService):
                 tmp_path = Path(tmp_file.name)
 
             try:
-                # Upload file to Gemini
+                # Upload file to Gemini with proper configuration
                 logger.info("Uploading file to Gemini API...")
-                uploaded_file = genai.upload_file(str(tmp_path))
+
+                # Use simpler upload without RAG storage
+                uploaded_file = await asyncio.to_thread(
+                    genai.upload_file,
+                    str(tmp_path)
+                )
 
                 # Wait for processing
                 while uploaded_file.state.name == "PROCESSING":
                     await asyncio.sleep(1)
-                    uploaded_file = genai.get_file(uploaded_file.name)
+                    uploaded_file = await asyncio.to_thread(genai.get_file, uploaded_file.name)
 
                 if uploaded_file.state.name == "FAILED":
                     raise Exception("File processing failed")
@@ -71,7 +76,10 @@ class GeminiTranscriptionService(BaseTranscriptionService):
                 logger.info(f"Transcription completed successfully ({len(transcription_text)} characters)")
 
                 # Clean up uploaded file
-                genai.delete_file(uploaded_file.name)
+                try:
+                    await asyncio.to_thread(genai.delete_file, uploaded_file.name)
+                except Exception as cleanup_error:
+                    logger.warning(f"Failed to cleanup uploaded file: {cleanup_error}")
 
                 return transcription_text
 
@@ -86,6 +94,12 @@ class GeminiTranscriptionService(BaseTranscriptionService):
     def _get_file_extension(self, media_type: str) -> str:
         """Get appropriate file extension for media type."""
         return "mp4" if media_type == "video" else "mp3"
+
+    def _get_mime_type(self, media_type: str) -> str:
+        """Get appropriate MIME type for media type."""
+        if media_type == "video":
+            return "video/mp4"
+        return "audio/mpeg"
 
     async def transcribe_audio(self, file_path: Path, language: str = "auto") -> Dict[str, Any]:
         """Transcribe audio file using Gemini API.

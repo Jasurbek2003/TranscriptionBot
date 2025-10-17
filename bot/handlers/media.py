@@ -132,10 +132,10 @@ async def process_media_file(
         web_app_url = settings.web_app_url if hasattr(settings, 'web_app_url') else "http://127.0.0.1:8000"
         sign_in_url = f"{web_app_url}/auth?token={token.token}"
 
-        # Check if URL is publicly accessible (not localhost/127.0.0.1)
-        is_public_url = not any(x in web_app_url.lower() for x in ['localhost', '127.0.0.1', '0.0.0.0'])
+        # In production, always use button. In development, check if URL is public
+        use_button = settings.is_production or not any(x in web_app_url.lower() for x in ['localhost', '127.0.0.1', '0.0.0.0'])
 
-        if is_public_url:
+        if use_button:
             # Create inline keyboard with sign-in button
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="🌐 Open Web Interface", url=sign_in_url)]
