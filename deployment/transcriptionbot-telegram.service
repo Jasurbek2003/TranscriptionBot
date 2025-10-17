@@ -2,6 +2,8 @@
 Description=TranscriptionBot Telegram Bot Service
 After=network.target postgresql.service redis.service
 Wants=postgresql.service redis.service
+StartLimitIntervalSec=60
+StartLimitBurst=3
 
 [Service]
 Type=simple
@@ -17,8 +19,6 @@ ExecStart=/opt/applications/projects/TranscriptionBot/TranscriptionBot/.venv/bin
 # Restart configuration
 Restart=always
 RestartSec=10
-StartLimitIntervalSec=60
-StartLimitBurst=3
 
 # Logging
 StandardOutput=journal
