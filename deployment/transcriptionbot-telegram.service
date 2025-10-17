@@ -9,7 +9,7 @@ User=company
 Group=company
 WorkingDirectory=/opt/applications/projects/TranscriptionBot/TranscriptionBot/bot
 Environment="PATH=/opt/applications/projects/TranscriptionBot/TranscriptionBot/.venv/bin"
-Environment="PYTHONPATH=/opt/applications/projects/TranscriptionBot/TranscriptionBot/
+Environment="PYTHONPATH=/opt/applications/projects/TranscriptionBot/TranscriptionBot/"
 EnvironmentFile=/opt/applications/projects/TranscriptionBot/TranscriptionBot/.env
 
 ExecStart=/opt/applications/projects/TranscriptionBot/TranscriptionBot/.venv/bin/python /opt/applications/projects/TranscriptionBot/TranscriptionBot/bot/main.py

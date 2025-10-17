@@ -16,7 +16,7 @@ EnvironmentFile=/opt/applications/projects/TranscriptionBot/TranscriptionBot/.en
 ExecStart=/opt/applications/projects/TranscriptionBot/TranscriptionBot/.venv/bin/gunicorn \
     --config /opt/applications/projects/TranscriptionBot/TranscriptionBot/deployment/gunicorn_config.py \
     --workers 3 \
-    --bind 127.0.0.1:8000 \
+    --bind 127.0.0.1:8100 \
     config.wsgi:application
 
 ExecReload=/bin/kill -s HUP $MAINPID

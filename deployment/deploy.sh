@@ -16,8 +16,8 @@ NC='\033[0m' # No Color
 # Configuration
 PROJECT_NAME="TranscriptionBot"
 DOMAIN="transcription.avlo.ai"
-DEPLOY_USER="www-data"
-PROJECT_DIR="/var/www/$PROJECT_NAME"
+DEPLOY_USER="company"
+PROJECT_DIR="/opt/applications/projects/TranscriptionBot/TranscriptionBot"
 VENV_DIR="$PROJECT_DIR/.venv"
 GITHUB_REPO="https://github.com/Jasurbek2003/TranscriptionBot.git"
 
@@ -354,7 +354,7 @@ main() {
     print_info "Website: https://$DOMAIN"
     print_info ""
     print_warning "Next steps:"
-    print_warning "1. Edit /var/www/TranscriptionBot/.env with your configuration"
+    print_warning "1. Edit /opt/applications/projects/TranscriptionBot/TranscriptionBot/.env with your configuration"
     print_warning "2. Update database password: sudo -u postgres psql"
     print_warning "3. Restart services: sudo systemctl restart transcriptionbot-*"
     print_warning "4. Check logs: sudo journalctl -u transcriptionbot-telegram -f"
