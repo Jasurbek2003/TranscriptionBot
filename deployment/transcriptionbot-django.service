@@ -38,7 +38,7 @@ SyslogIdentifier=transcriptionbot-django
 # Security and resource limits
 NoNewPrivileges=true
 ProtectSystem=strict
-ProtectHome=true
+ProtectHome=read-only
 ReadWritePaths=/opt/applications/projects/TranscriptionBot/TranscriptionBot/django_admin/media /opt/applications/projects/TranscriptionBot/TranscriptionBot/django_admin/staticfiles /opt/applications/projects/TranscriptionBot/TranscriptionBot/logs /var/run/transcriptionbot
 LimitNOFILE=65536
 

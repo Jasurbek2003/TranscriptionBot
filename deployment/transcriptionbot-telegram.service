@@ -29,7 +29,7 @@ SyslogIdentifier=transcriptionbot-telegram
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
-ProtectHome=true
+ProtectHome=read-only
 ReadWritePaths=/opt/applications/projects/TranscriptionBot/TranscriptionBot/media /opt/applications/projects/TranscriptionBot/TranscriptionBot/logs
 LimitNOFILE=65536
 
