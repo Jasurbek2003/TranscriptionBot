@@ -1,10 +1,13 @@
 """Gemini-based transcription service."""
 
 import asyncio
+import base64
 import tempfile
+import time
 from pathlib import Path
 from typing import Dict, Any, Union
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from .base import BaseTranscriptionService
 from core.logging import logger
@@ -20,8 +23,8 @@ class GeminiTranscriptionService(BaseTranscriptionService):
             api_key: Gemini API key
         """
         super().__init__(api_key)
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
+        self.client = genai.Client(api_key=api_key)
+        self.model = 'gemini-2.0-flash-exp'
 
     async def transcribe_from_bytes(self, file_bytes: bytes, media_type: str, duration: int = 0) -> str:
         """Transcribe media from bytes.
@@ -37,87 +40,44 @@ class GeminiTranscriptionService(BaseTranscriptionService):
         try:
             logger.info(f"Transcribing {media_type} from bytes (duration: {duration}s)")
 
-            # Create temporary file
-            with tempfile.NamedTemporaryFile(suffix=f'.{self._get_file_extension(media_type)}', delete=False) as tmp_file:
-                tmp_file.write(file_bytes)
-                tmp_path = Path(tmp_file.name)
+            # Encode file data to base64
+            file_data_base64 = base64.b64encode(file_bytes).decode('utf-8')
 
-            try:
-                # Upload file to Gemini with proper configuration
-                logger.info("Uploading file to Gemini API...")
+            # Create prompt
+            prompt = """
+            Please transcribe the audio/video content in this file.
+            Provide only the transcribed text without any additional commentary or formatting.
+            If there are multiple speakers, indicate speaker changes with [Speaker 1], [Speaker 2], etc.
+            """
 
-                # Try upload with compatibility for different library versions
-                try:
-                    # Try newer API (0.8.0+)
-                    uploaded_file = await asyncio.to_thread(
-                        genai.upload_file,
-                        str(tmp_path)
-                    )
-                except (TypeError, AttributeError) as e:
-                    # Fallback for older API (0.7.x) - use Blob API
-                    logger.info(f"Using Blob API for older library version: {e}")
+            # Create content with inline data using new API
+            contents = [
+                types.Content(
+                    role="user",
+                    parts=[
+                        types.Part.from_text(text=prompt),
+                        types.Part(
+                            inline_data=types.Blob(
+                                mime_type=self._get_mime_type(media_type),
+                                data=file_data_base64
+                            )
+                        ),
+                    ],
+                ),
+            ]
 
-                    from google.generativeai.types import Blob
+            # Generate content using new API
+            logger.info("Sending request to Gemini API...")
+            response = await asyncio.to_thread(
+                self.client.models.generate_content,
+                model=self.model,
+                contents=contents,
+            )
 
-                    with open(tmp_path, 'rb') as f:
-                        file_data = f.read()
+            transcription_text = response.text.strip()
+            logger.info(f"Transcription completed successfully ({len(transcription_text)} characters)")
 
-                    # Create a Blob object
-                    blob = Blob(
-                        mime_type=self._get_mime_type(media_type),
-                        data=file_data
-                    )
-
-                    prompt = """
-                    Please transcribe the audio/video content in this file.
-                    Provide only the transcribed text without any additional commentary or formatting.
-                    If there are multiple speakers, indicate speaker changes with [Speaker 1], [Speaker 2], etc.
-                    """
-
-                    # Generate content with blob
-                    response = await asyncio.to_thread(
-                        self.model.generate_content,
-                        [prompt, blob]
-                    )
-
-                    transcription_text = response.text.strip()
-                    logger.info(f"Transcription completed successfully ({len(transcription_text)} characters)")
-                    return transcription_text
-
-                # Wait for processing
-                while uploaded_file.state.name == "PROCESSING":
-                    await asyncio.sleep(1)
-                    uploaded_file = await asyncio.to_thread(genai.get_file, uploaded_file.name)
-
-                if uploaded_file.state.name == "FAILED":
-                    raise Exception("File processing failed")
-
-                # Generate transcription
-                prompt = """
-                Please transcribe the audio/video content in this file.
-                Provide only the transcribed text without any additional commentary or formatting.
-                If there are multiple speakers, indicate speaker changes with [Speaker 1], [Speaker 2], etc.
-                """
-
-                response = await asyncio.to_thread(
-                    self.model.generate_content,
-                    [prompt, uploaded_file]
-                )
-
-                transcription_text = response.text.strip()
-                logger.info(f"Transcription completed successfully ({len(transcription_text)} characters)")
-
-                # Clean up uploaded file
-                try:
-                    await asyncio.to_thread(genai.delete_file, uploaded_file.name)
-                except Exception as cleanup_error:
-                    logger.warning(f"Failed to cleanup uploaded file: {cleanup_error}")
-
-                return transcription_text
-
-            finally:
-                # Clean up temporary file
-                tmp_path.unlink(missing_ok=True)
+            return transcription_text
 
         except Exception as e:
             logger.error(f"Transcription failed: {e}")
