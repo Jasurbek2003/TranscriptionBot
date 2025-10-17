@@ -6,11 +6,18 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Dict, Any, Union
-from google import genai
-from google.genai import types
 
 from .base import BaseTranscriptionService
 from core.logging import logger
+
+# Try to import the new google-genai library, fallback to old one
+try:
+    from google import genai
+    from google.genai import types
+    USE_NEW_API = True
+except ImportError:
+    import google.generativeai as genai
+    USE_NEW_API = False
 
 
 class GeminiTranscriptionService(BaseTranscriptionService):
@@ -23,8 +30,16 @@ class GeminiTranscriptionService(BaseTranscriptionService):
             api_key: Gemini API key
         """
         super().__init__(api_key)
-        self.client = genai.Client(api_key=api_key)
-        self.model = 'gemini-2.0-flash-exp'
+
+        if USE_NEW_API:
+            # New google-genai library
+            self.client = genai.Client(api_key=api_key)
+            self.model = 'gemini-2.0-flash-exp'
+        else:
+            # Old google-generativeai library
+            genai.configure(api_key=api_key)
+            self.client = None
+            self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
 
     async def transcribe_from_bytes(self, file_bytes: bytes, media_type: str, duration: int = 0) -> str:
         """Transcribe media from bytes.
@@ -38,10 +53,7 @@ class GeminiTranscriptionService(BaseTranscriptionService):
             Transcribed text
         """
         try:
-            logger.info(f"Transcribing {media_type} from bytes (duration: {duration}s)")
-
-            # Encode file data to base64
-            file_data_base64 = base64.b64encode(file_bytes).decode('utf-8')
+            logger.info(f"Transcribing {media_type} from bytes (duration: {duration}s) using {'new' if USE_NEW_API else 'old'} API")
 
             # Create prompt
             prompt = """
@@ -50,33 +62,51 @@ class GeminiTranscriptionService(BaseTranscriptionService):
             If there are multiple speakers, indicate speaker changes with [Speaker 1], [Speaker 2], etc.
             """
 
-            # Create content with inline data using new API
-            contents = [
-                types.Content(
-                    role="user",
-                    parts=[
-                        types.Part.from_text(text=prompt),
-                        types.Part(
-                            inline_data=types.Blob(
-                                mime_type=self._get_mime_type(media_type),
-                                data=file_data_base64
-                            )
-                        ),
-                    ],
-                ),
-            ]
+            if USE_NEW_API:
+                # Use new google-genai library
+                file_data_base64 = base64.b64encode(file_bytes).decode('utf-8')
 
-            # Generate content using new API
-            logger.info("Sending request to Gemini API...")
-            response = await asyncio.to_thread(
-                self.client.models.generate_content,
-                model=self.model,
-                contents=contents,
-            )
+                contents = [
+                    types.Content(
+                        role="user",
+                        parts=[
+                            types.Part.from_text(text=prompt),
+                            types.Part(
+                                inline_data=types.Blob(
+                                    mime_type=self._get_mime_type(media_type),
+                                    data=file_data_base64
+                                )
+                            ),
+                        ],
+                    ),
+                ]
 
-            transcription_text = response.text.strip()
+                logger.info("Sending request to Gemini API (new API)...")
+                response = await asyncio.to_thread(
+                    self.client.models.generate_content,
+                    model=self.model,
+                    contents=contents,
+                )
+                transcription_text = response.text.strip()
+            else:
+                # Use old google-generativeai library with Part API
+                logger.info("Sending request to Gemini API (old API)...")
+
+                # Create a part with inline data
+                part = {
+                    "inline_data": {
+                        "mime_type": self._get_mime_type(media_type),
+                        "data": base64.b64encode(file_bytes).decode('utf-8')
+                    }
+                }
+
+                response = await asyncio.to_thread(
+                    self.model.generate_content,
+                    [prompt, part]
+                )
+                transcription_text = response.text.strip()
+
             logger.info(f"Transcription completed successfully ({len(transcription_text)} characters)")
-
             return transcription_text
 
         except Exception as e:
