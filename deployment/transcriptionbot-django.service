@@ -7,14 +7,14 @@ Wants=postgresql.service redis.service
 Type=notify
 User=www-data
 Group=www-data
-WorkingDirectory=/var/www/TranscriptionBot/django_admin
-Environment="PATH=/var/www/TranscriptionBot/.venv/bin"
-Environment="PYTHONPATH=/var/www/TranscriptionBot"
+WorkingDirectory=/opt/applications/projects/TranscriptionBot/TranscriptionBot/django_admin
+Environment="PATH=/opt/applications/projects/TranscriptionBot/TranscriptionBot/.venv/bin"
+Environment="PYTHONPATH=/opt/applications/projects/TranscriptionBot/TranscriptionBot/"
 Environment="DJANGO_SETTINGS_MODULE=config.settings.production"
-EnvironmentFile=/var/www/TranscriptionBot/.env
+EnvironmentFile=/opt/applications/projects/TranscriptionBot/TranscriptionBot/.env
 
-ExecStart=/var/www/TranscriptionBot/.venv/bin/gunicorn \
-    --config /var/www/TranscriptionBot/deployment/gunicorn_config.py \
+ExecStart=/opt/applications/projects/TranscriptionBot/TranscriptionBot/.venv/bin/gunicorn \
+    --config /opt/applications/projects/TranscriptionBot/TranscriptionBot/deployment/gunicorn_config.py \
     --workers 3 \
     --bind 127.0.0.1:8000 \
     config.wsgi:application
@@ -39,7 +39,7 @@ SyslogIdentifier=transcriptionbot-django
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/www/TranscriptionBot/django_admin/media /var/www/TranscriptionBot/django_admin/staticfiles /var/www/TranscriptionBot/logs /var/run/transcriptionbot
+ReadWritePaths=/opt/applications/projects/TranscriptionBot/TranscriptionBot/django_admin/media /opt/applications/projects/TranscriptionBot/TranscriptionBot/django_admin/staticfiles /opt/applications/projects/TranscriptionBot/TranscriptionBot/logs /var/run/transcriptionbot
 LimitNOFILE=65536
 
 [Install]

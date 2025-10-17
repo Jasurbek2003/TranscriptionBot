@@ -7,12 +7,12 @@ Wants=postgresql.service redis.service
 Type=simple
 User=www-data
 Group=www-data
-WorkingDirectory=/var/www/TranscriptionBot/bot
-Environment="PATH=/var/www/TranscriptionBot/.venv/bin"
-Environment="PYTHONPATH=/var/www/TranscriptionBot"
-EnvironmentFile=/var/www/TranscriptionBot/.env
+WorkingDirectory=/opt/applications/projects/TranscriptionBot/TranscriptionBot/bot
+Environment="PATH=/opt/applications/projects/TranscriptionBot/TranscriptionBot/.venv/bin"
+Environment="PYTHONPATH=/opt/applications/projects/TranscriptionBot/TranscriptionBot/
+EnvironmentFile=/opt/applications/projects/TranscriptionBot/TranscriptionBot/.env
 
-ExecStart=/var/www/TranscriptionBot/.venv/bin/python /var/www/TranscriptionBot/bot/main.py
+ExecStart=/opt/applications/projects/TranscriptionBot/TranscriptionBot/.venv/bin/python /opt/applications/projects/TranscriptionBot/TranscriptionBot/bot/main.py
 
 # Restart configuration
 Restart=always
@@ -30,7 +30,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/www/TranscriptionBot/media /var/www/TranscriptionBot/logs
+ReadWritePaths=/opt/applications/projects/TranscriptionBot/TranscriptionBot/media /opt/applications/projects/TranscriptionBot/TranscriptionBot/logs
 LimitNOFILE=65536
 
 [Install]
