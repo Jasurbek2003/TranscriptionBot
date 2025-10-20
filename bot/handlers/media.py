@@ -3,6 +3,7 @@ from aiogram.types import Message, CallbackQuery, BufferedInputFile, InlineKeybo
 from aiogram.fsm.context import FSMContext
 from datetime import datetime
 from decimal import Decimal
+from django.db.models import Sum
 import asyncio
 import logging
 from asgiref.sync import sync_to_async
@@ -291,7 +292,7 @@ async def process_media_file(
                 f"💰 Cost: {total_cost:.2f} UZS\n"
                 f"💳 New Balance: {wallet.balance:.2f} UZS"
             ),
-            # reply_markup=get_transcription_keyboard(str(transcription.id))
+            reply_markup=get_transcription_keyboard(str(transcription.id))
         )
 
         # Delete processing message
@@ -341,9 +342,105 @@ async def handle_rating(callback: CallbackQuery):
 
 
 @router.callback_query(F.data.startswith("download:"))
-async def download_transcription(callback: CallbackQuery):
-    """Handle transcription download request (disabled in demo mode)"""
-    await callback.answer("Download feature is disabled in demo mode!", show_alert=True)
+async def download_transcription(callback: CallbackQuery, user, wallet):
+    """Handle transcription download request - sends file to user's profile with detailed information"""
+    try:
+        # Extract transcription ID from callback data
+        transcription_id = callback.data.split(":")[1]
+
+        # Fetch transcription from database
+        @sync_to_async
+        def get_transcription():
+            return Transcription.objects.filter(
+                id=transcription_id,
+                user_id=user.id
+            ).first()
+
+        transcription = await get_transcription()
+
+        if not transcription:
+            await callback.answer("❌ Transcription not found!", show_alert=True)
+            return
+
+        # Get user profile statistics
+        @sync_to_async
+        def get_user_stats():
+            total_transcriptions = Transcription.objects.filter(user_id=user.id).count()
+            completed_transcriptions = Transcription.objects.filter(
+                user_id=user.id,
+                status='completed'
+            ).count()
+            total_spent = Transcription.objects.filter(
+                user_id=user.id,
+                status='completed'
+            ).aggregate(total=Sum('cost'))['total'] or Decimal('0.00')
+
+            return {
+                'total_transcriptions': total_transcriptions,
+                'completed_transcriptions': completed_transcriptions,
+                'total_spent': total_spent
+            }
+
+        stats = await get_user_stats()
+
+        # Answer callback query first
+        await callback.answer("⏳ Preparing your file...", show_alert=False)
+
+        # Prepare file information
+        file_size_kb = transcription.file_size / 1024 if transcription.file_size else 0
+        file_size_mb = file_size_kb / 1024
+        file_size_display = f"{file_size_mb:.2f} MB" if file_size_mb >= 1 else f"{file_size_kb:.2f} KB"
+
+        # Generate filename with timestamp
+        timestamp = transcription.created_at.strftime("%Y%m%d_%H%M%S")
+        filename = transcription.file_name or f"transcription_{timestamp}.txt"
+        if not filename.endswith('.txt'):
+            filename = f"{filename.rsplit('.', 1)[0]}.txt"
+
+        # Calculate word count
+        word_count = len(transcription.transcription_text.split()) if transcription.transcription_text else 0
+
+        # Format duration
+        duration_min = transcription.duration_seconds // 60
+        duration_sec = transcription.duration_seconds % 60
+        duration_display = f"{duration_min}:{duration_sec:02d}"
+
+        # Send transcription file with comprehensive information
+        await callback.message.answer_document(
+            BufferedInputFile(
+                transcription.transcription_text.encode('utf-8'),
+                filename=filename
+            ),
+            caption=(
+                "📄 <b>Transcription Download</b>\n"
+                "━━━━━━━━━━━━━━━━━━━━\n\n"
+                "<b>📊 File Information:</b>\n"
+                f"• File Name: <code>{filename}</code>\n"
+                f"• File Size: {file_size_display}\n"
+                f"• File Type: {transcription.file_type.capitalize()}\n"
+                f"• Duration: {duration_display}\n"
+                f"• Word Count: {word_count:,} words\n\n"
+                "<b>⚙️ Processing Status:</b>\n"
+                f"• Status: ✅ {transcription.status.capitalize()}\n"
+                f"• Quality: {transcription.quality_level.capitalize()}\n"
+                f"• Language: {transcription.language.upper()}\n"
+                f"• Processed: {transcription.created_at.strftime('%Y-%m-%d %H:%M')}\n"
+                f"• Cost: {transcription.cost:.2f} UZS\n\n"
+                "<b>👤 Your Profile Stats:</b>\n"
+                f"• Total Transcriptions: {stats['total_transcriptions']}\n"
+                f"• Completed: {stats['completed_transcriptions']}\n"
+                f"• Current Balance: {wallet.balance:.2f} UZS\n"
+                f"• Total Spent: {stats['total_spent']:.2f} UZS\n\n"
+                "✅ <b>File sent successfully to your profile!</b>\n"
+                "━━━━━━━━━━━━━━━━━━━━"
+            )
+        )
+
+        logger.info(f"Transcription {transcription_id} downloaded by user {user.id}")
+
+    except Exception as e:
+        logger.error(f"Error downloading transcription: {e}", exc_info=True)
+        await callback.answer("❌ Error downloading transcription. Please try again later.", show_alert=True)
 
 
 # Handle media sent without command
