@@ -55,8 +55,8 @@ LOCAL_APPS = [
     'apps.wallet',
     'apps.transactions',
     'apps.transcriptions',
+    'apps.pricing',
     'webapp',
-    # 'apps.pricing',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
