@@ -4,17 +4,24 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.db.models import Q
 from django.utils import timezone
 from datetime import datetime, timedelta
 from decimal import Decimal
 import logging
+import json
 
 from apps.users.models import TelegramUser
 from apps.wallet.models import Wallet
 from apps.transcriptions.models import Transcription
 from webapp.models import OneTimeToken
+from webapp.telegram_auth import (
+    validate_telegram_webapp_data,
+    extract_user_from_init_data,
+    create_telegram_auth_response
+)
 from services.transcription.gemini_service import GeminiTranscriptionService
 from services.media_utils import get_media_duration
 from bot.config import settings
@@ -166,6 +173,107 @@ def user_logout(request):
     """Logout user"""
     logout(request)
     return redirect('webapp:home')
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def telegram_webapp_auth(request):
+    """
+    Authenticate user via Telegram WebApp initData
+
+    This endpoint receives initData from Telegram WebApp and validates it,
+    then automatically logs in the user.
+    """
+    try:
+        # Get initData from request
+        data = json.loads(request.body)
+        init_data = data.get('initData')
+
+        if not init_data:
+            return JsonResponse(
+                create_telegram_auth_response(False, "No initData provided"),
+                status=400
+            )
+
+        # Validate initData with bot token
+        validated_data = validate_telegram_webapp_data(init_data, settings.bot_token)
+
+        if not validated_data:
+            return JsonResponse(
+                create_telegram_auth_response(False, "Invalid or expired initData"),
+                status=401
+            )
+
+        # Extract user data
+        user_data = extract_user_from_init_data(validated_data)
+
+        if not user_data or not user_data.get('telegram_id'):
+            return JsonResponse(
+                create_telegram_auth_response(False, "Could not extract user data"),
+                status=400
+            )
+
+        # Find or create user
+        try:
+            user = TelegramUser.objects.get(telegram_id=user_data['telegram_id'])
+
+            # Update user info from Telegram
+            user.first_name = user_data.get('first_name', '')
+            user.last_name = user_data.get('last_name', '')
+            user.username = user_data.get('username', '')
+            user.language_code = user_data.get('language_code', 'en')
+            user.is_premium = user_data.get('is_premium', False)
+            user.last_login = timezone.now()
+            user.save()
+
+            logger.info(f"Existing user authenticated via WebApp: {user.telegram_id}")
+
+        except TelegramUser.DoesNotExist:
+            # Create new user
+            user = TelegramUser.objects.create(
+                telegram_id=user_data['telegram_id'],
+                first_name=user_data.get('first_name', ''),
+                last_name=user_data.get('last_name', ''),
+                username=user_data.get('username', ''),
+                language_code=user_data.get('language_code', 'en'),
+                is_premium=user_data.get('is_premium', False),
+                is_active=True,
+                is_bot=False
+            )
+
+            # Create wallet for new user
+            Wallet.objects.create(user=user)
+
+            logger.info(f"New user created via WebApp: {user.telegram_id}")
+
+        # Log user in
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+
+        # Return success response
+        return JsonResponse(
+            create_telegram_auth_response(
+                True,
+                "Authentication successful",
+                {
+                    'id': user.id,
+                    'telegram_id': user.telegram_id,
+                    'first_name': user.first_name,
+                    'username': user.username
+                }
+            )
+        )
+
+    except json.JSONDecodeError:
+        return JsonResponse(
+            create_telegram_auth_response(False, "Invalid JSON data"),
+            status=400
+        )
+    except Exception as e:
+        logger.error(f"Telegram WebApp auth error: {e}", exc_info=True)
+        return JsonResponse(
+            create_telegram_auth_response(False, "Authentication failed"),
+            status=500
+        )
 
 
 # API Endpoints

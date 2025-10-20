@@ -15,6 +15,7 @@ urlpatterns = [
     path('logout/', views.user_logout, name='logout'),
 
     # API endpoints
+    path('api/auth/telegram/', views.telegram_webapp_auth, name='telegram_webapp_auth'),
     path('api/auth/status/', views.auth_status, name='auth_status'),
     path('api/upload/', views.upload_file, name='api_upload'),
 ]

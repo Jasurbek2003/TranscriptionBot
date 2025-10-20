@@ -397,6 +397,26 @@
             }
             lastTouchEnd = now;
         }, false);
+
+        // Global function to check Telegram authentication status
+        window.checkTelegramAuth = function() {
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+                return {
+                    isWebApp: true,
+                    initData: window.Telegram.WebApp.initData,
+                    user: window.Telegram.WebApp.initDataUnsafe?.user
+                };
+            }
+            return { isWebApp: false };
+        };
+
+        // Add Telegram user info to console for debugging
+        if (window.Telegram && window.Telegram.WebApp) {
+            const authInfo = window.checkTelegramAuth();
+            if (authInfo.isWebApp && authInfo.user) {
+                console.log('Telegram User:', authInfo.user);
+            }
+        }
     </script>
 
     {% block extra_js %}{% endblock %}
