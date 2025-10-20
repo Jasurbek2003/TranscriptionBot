@@ -317,6 +317,43 @@ def auth_status(request):
 
 
 @login_required
+@require_http_methods(["GET"])
+def download_transcription(request, transcription_id):
+    """Download transcription as text file"""
+    try:
+        # Get transcription
+        transcription = Transcription.objects.get(
+            id=transcription_id,
+            user=request.user
+        )
+
+        # Create response with text file
+        from django.http import HttpResponse
+        response = HttpResponse(
+            transcription.transcription_text,
+            content_type='text/plain; charset=utf-8'
+        )
+
+        # Set filename
+        filename = transcription.file_name or f"transcription_{transcription_id}"
+        # Remove extension if exists
+        if '.' in filename:
+            filename = filename.rsplit('.', 1)[0]
+        filename = f"{filename}.txt"
+
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+        logger.info(f"User {request.user.telegram_id} downloaded transcription {transcription_id}")
+        return response
+
+    except Transcription.DoesNotExist:
+        return JsonResponse({'error': 'Transcription not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Download error: {e}", exc_info=True)
+        return JsonResponse({'error': 'Download failed'}, status=500)
+
+
+@login_required
 @require_http_methods(["POST"])
 def upload_file(request):
     """Upload and transcribe file"""

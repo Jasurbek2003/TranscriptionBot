@@ -380,6 +380,10 @@
 
 <script>
     let currentTranscriptionText = '';
+    let currentTranscriptionId = null;
+
+    // Check if running in Telegram WebApp
+    const isTelegramWebApp = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData;
 
     // Format durations on page load
     document.addEventListener('DOMContentLoaded', function() {
@@ -394,6 +398,7 @@
     function viewTranscription(id) {
         const text = document.getElementById('full-text-' + id).textContent;
         currentTranscriptionText = text;
+        currentTranscriptionId = id;
         document.getElementById('modal-text').textContent = text;
         document.getElementById('modal').style.display = 'block';
     }
@@ -403,15 +408,25 @@
     }
 
     function downloadModalText() {
-        const blob = new Blob([currentTranscriptionText], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `transcription_${Date.now()}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        if (!currentTranscriptionId) {
+            alert('Error: No transcription selected');
+            return;
+        }
+
+        const downloadUrl = `/api/download/${currentTranscriptionId}/`;
+
+        if (isTelegramWebApp) {
+            // In Telegram WebApp, open download link in external browser
+            window.Telegram.WebApp.openLink(window.location.origin + downloadUrl);
+
+            // Show feedback
+            if (window.Telegram.WebApp.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            }
+        } else {
+            // In regular browser, just navigate to download URL
+            window.location.href = downloadUrl;
+        }
     }
 
     // Close modal when clicking outside

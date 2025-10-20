@@ -18,4 +18,5 @@ urlpatterns = [
     path('api/auth/telegram/', views.telegram_webapp_auth, name='telegram_webapp_auth'),
     path('api/auth/status/', views.auth_status, name='auth_status'),
     path('api/upload/', views.upload_file, name='api_upload'),
+    path('api/download/<int:transcription_id>/', views.download_transcription, name='download_transcription'),
 ]
