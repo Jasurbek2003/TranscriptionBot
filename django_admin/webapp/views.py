@@ -16,6 +16,7 @@ import json
 from apps.users.models import TelegramUser
 from apps.wallet.models import Wallet
 from apps.transcriptions.models import Transcription
+from apps.pricing.utils import get_active_pricing, calculate_transcription_cost
 from webapp.models import OneTimeToken
 from webapp.telegram_auth import (
     validate_telegram_webapp_data,
@@ -112,10 +113,19 @@ def dashboard(request):
             user=request.user
         ).order_by('-created_at')[:5]
 
+        # Get current pricing
+        pricing = get_active_pricing()
+
         return render(request, 'dashboard.html', {
             'user': request.user,
             'wallet': wallet,
-            'recent_transcriptions': recent_transcriptions
+            'recent_transcriptions': recent_transcriptions,
+            'settings': {
+                'pricing': pricing,
+                'ai': {
+                    'max_file_size_mb': settings.ai.max_file_size_mb
+                }
+            }
         })
     except Wallet.DoesNotExist:
         logger.error(f"Wallet not found for user {request.user.id}")
@@ -130,13 +140,20 @@ def upload_page(request):
     """File upload page"""
     try:
         wallet = Wallet.objects.get(user=request.user)
+        pricing = get_active_pricing()
 
         return render(request, 'upload.html', {
             'user': request.user,
             'wallet': wallet,
             'max_file_size_mb': settings.ai.max_file_size_mb,
             'max_audio_duration_min': settings.ai.max_audio_duration_seconds // 60,
-            'max_video_duration_min': settings.ai.max_video_duration_seconds // 60
+            'max_video_duration_min': settings.ai.max_video_duration_seconds // 60,
+            'settings': {
+                'pricing': pricing,
+                'ai': {
+                    'max_file_size_mb': settings.ai.max_file_size_mb
+                }
+            }
         })
     except Wallet.DoesNotExist:
         return render(request, 'error.html', {
@@ -157,10 +174,16 @@ def transcriptions_page(request):
         # Get user's wallet
         wallet = Wallet.objects.get(user=request.user)
 
+        # Get current pricing
+        pricing = get_active_pricing()
+
         return render(request, 'transcriptions.html', {
             'user': request.user,
             'wallet': wallet,
-            'transcriptions': transcriptions
+            'transcriptions': transcriptions,
+            'settings': {
+                'pricing': pricing
+            }
         })
     except Wallet.DoesNotExist:
         return render(request, 'error.html', {
@@ -345,13 +368,8 @@ def upload_file(request):
                 'error': f'File too long. Maximum duration: {max_duration // 60} minutes'
             }, status=400)
 
-        # Calculate cost
-        if media_type == 'audio':
-            cost_per_min = settings.pricing.audio_price_per_min
-        else:
-            cost_per_min = settings.pricing.video_price_per_min
-
-        total_cost = Decimal(str((duration / 60) * cost_per_min))
+        # Calculate cost using pricing utility
+        total_cost = calculate_transcription_cost(media_type, duration)
 
         # Check balance
         if wallet.balance < total_cost:

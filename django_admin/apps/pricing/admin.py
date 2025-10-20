@@ -42,13 +42,66 @@ class PricingPlanAdmin(admin.ModelAdmin):
                 'fast_quality_multiplier',
                 'normal_quality_multiplier',
                 'high_quality_multiplier'
-            )
+            ),
+            'classes': ('collapse',)
+        }),
+        (_('Limits'), {
+            'fields': (
+                'max_duration_seconds',
+                'max_file_size_mb'
+            ),
+            'classes': ('collapse',)
         }),
         (_('Timestamps'), {
-            'fields': ('created_at', 'updated_at')
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
         }),
     )
     readonly_fields = ['created_at', 'updated_at']
-    ordering = ['-created_at']
+    ordering = ['-is_default', '-is_active', '-created_at']
+
+    def audio_price_display(self, obj):
+        """Display audio price with formatting"""
+        return format_html(
+            '<strong>{:.0f}</strong> sum/min',
+            obj.audio_price_per_minute
+        )
+    audio_price_display.short_description = _('Audio Price')
+    audio_price_display.admin_order_field = 'audio_price_per_minute'
+
+    def video_price_display(self, obj):
+        """Display video price with formatting"""
+        return format_html(
+            '<strong>{:.0f}</strong> sum/min',
+            obj.video_price_per_minute
+        )
+    video_price_display.short_description = _('Video Price')
+    video_price_display.admin_order_field = 'video_price_per_minute'
+
+    def discount_badge(self, obj):
+        """Display discount badge"""
+        if obj.discount_percentage > 0:
+            return format_html(
+                '<span style="background: #28a745; color: white; padding: 3px 8px; '
+                'border-radius: 3px; font-size: 11px; font-weight: bold;">-{:.0f}%</span>',
+                obj.discount_percentage
+            )
+        return format_html(
+            '<span style="color: #999;">No discount</span>'
+        )
+    discount_badge.short_description = _('Discount')
+
+    def status_badge(self, obj):
+        """Display status badge"""
+        if obj.is_active:
+            return format_html(
+                '<span style="background: #28a745; color: white; padding: 3px 8px; '
+                'border-radius: 3px; font-size: 11px; font-weight: bold;">ACTIVE</span>'
+            )
+        return format_html(
+            '<span style="background: #dc3545; color: white; padding: 3px 8px; '
+            'border-radius: 3px; font-size: 11px; font-weight: bold;">INACTIVE</span>'
+        )
+    status_badge.short_description = _('Status')
 
 
