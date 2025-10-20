@@ -96,8 +96,11 @@ class PricingPlan(models.Model):
         return self.name
 
     def calculate_price(self, media_type: str, duration_seconds: int, quality: str = 'normal'):
-        """Calculate price for transcription"""
-        duration_minutes = (duration_seconds + 59) // 60  # Round up
+        """Calculate price for transcription based on exact duration"""
+        from decimal import Decimal
+
+        # Convert seconds to exact minutes (decimal)
+        duration_minutes = Decimal(str(duration_seconds)) / Decimal('60')  # Exact duration, not rounded
 
         # Get base price
         if media_type in ['audio', 'voice']:

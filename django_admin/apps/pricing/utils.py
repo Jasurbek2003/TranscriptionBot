@@ -96,7 +96,7 @@ def calculate_transcription_cost(
 
     # Fallback to simple calculation from config
     pricing = get_active_pricing()
-    duration_minutes = (duration_seconds + 59) / 60  # Round up
+    duration_minutes = duration_seconds / 60  # Exact duration, not rounded
 
     if media_type in ['audio', 'voice']:
         cost = pricing['audio_price_per_min'] * duration_minutes

@@ -242,8 +242,9 @@ class WalletService:
         duration_seconds: int,
         media_type: str
     ) -> Decimal:
-        """Calculate transcription cost based on duration and type."""
-        duration_minutes = max(1, (duration_seconds + 59) // 60)  # Round up
+        """Calculate transcription cost based on exact duration."""
+        # Convert seconds to exact minutes (decimal)
+        duration_minutes = duration_seconds / 60  # Exact duration, not rounded
 
         if media_type.lower() in ['video', 'video_note']:
             base_cost = settings.pricing.video_price_per_min

@@ -63,7 +63,7 @@ class PricingPlanAdmin(admin.ModelAdmin):
     def audio_price_display(self, obj):
         """Display audio price with formatting"""
         return format_html(
-            '<strong>{:.0f}</strong> sum/min',
+            '<strong>{}</strong> sum/min',
             obj.audio_price_per_minute
         )
     audio_price_display.short_description = _('Audio Price')
@@ -72,7 +72,7 @@ class PricingPlanAdmin(admin.ModelAdmin):
     def video_price_display(self, obj):
         """Display video price with formatting"""
         return format_html(
-            '<strong>{:.0f}</strong> sum/min',
+            '<strong>{}</strong> sum/min',
             obj.video_price_per_minute
         )
     video_price_display.short_description = _('Video Price')

@@ -448,10 +448,11 @@ class WalletService:
         media_type: str,
         quality_level: str = "normal"
     ) -> Decimal:
-        """Calculate transcription cost based on duration and type."""
+        """Calculate transcription cost based on exact duration."""
         from core.enums import QualityLevel
 
-        duration_minutes = max(1, duration_seconds // 60 + (1 if duration_seconds % 60 > 0 else 0))
+        # Convert seconds to exact minutes (decimal)
+        duration_minutes = duration_seconds / 60  # Exact duration, not rounded
 
         if media_type.lower() in ['video', 'video_note']:
             base_cost = pricing_settings.video_price_per_min
