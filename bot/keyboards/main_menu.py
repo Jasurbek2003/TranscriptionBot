@@ -1,10 +1,20 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
+from bot.config import settings
 
 
-def get_main_menu(is_admin: bool = False) -> ReplyKeyboardMarkup:
+def get_main_menu(is_admin: bool = False, include_webapp: bool = True) -> ReplyKeyboardMarkup:
     """Get main menu keyboard"""
     builder = ReplyKeyboardBuilder()
+
+    # Webapp button (optional)
+    if include_webapp:
+        builder.row(
+            KeyboardButton(
+                text="🌐 Open Web App",
+                web_app=WebAppInfo(url=settings.webapp_url)
+            )
+        )
 
     # Main buttons
     builder.row(

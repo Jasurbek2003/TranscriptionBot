@@ -29,6 +29,7 @@ from bot.handlers import (
     # admin,  # Commented out - needs Django ORM refactoring
     errors
 )
+from bot.handlers import webapp  # Import webapp handler
 from bot.middlewares import (
     DatabaseMiddleware,
     AuthMiddleware,
@@ -143,6 +144,7 @@ async def main():
         # dp.message.middleware(BalanceCheckMiddleware())
 
         # Register routers (media router first to handle transcription properly)
+        dp.include_router(webapp.router)  # Webapp handler
         dp.include_router(media.router)
         dp.include_router(balance.router)
         dp.include_router(start.router)

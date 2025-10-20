@@ -241,6 +241,12 @@ class Settings(BaseSettings):
             return self.ai.max_file_size_mb * 1024 * 1024
         return 20 * 1024 * 1024  # 20MB for standard Telegram Bot API
 
+    @computed_field
+    @property
+    def webapp_url(self) -> str:
+        """Get webapp URL (alias for web_app_url for consistency)."""
+        return self.web_app_url
+
 
 # Initialize directories
 ensure_directories()
