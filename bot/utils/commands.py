@@ -12,6 +12,7 @@ async def set_bot_commands(bot: Bot):
     # Default commands for all users
     default_commands = [
         BotCommand(command="start", description="Start the bot"),
+        BotCommand(command="webapp", description="Open web application"),
         BotCommand(command="help", description="Get help"),
         BotCommand(command="menu", description="Show main menu"),
         BotCommand(command="balance", description="Check balance"),
