@@ -2,41 +2,158 @@
 
 {% block title %}Welcome - Transcription Bot{% endblock %}
 
+{% block extra_css %}
+<style>
+    .landing-container {
+        text-align: center;
+        padding: 40px 20px;
+    }
+
+    .landing-title {
+        font-size: 42px;
+        margin-bottom: 20px;
+        color: #667eea;
+    }
+
+    .landing-subtitle {
+        font-size: 18px;
+        margin-bottom: 35px;
+        color: #666;
+    }
+
+    .features-container {
+        max-width: 600px;
+        margin: 0 auto 35px;
+        text-align: left;
+    }
+
+    .features-title {
+        color: #667eea;
+        margin-bottom: 18px;
+    }
+
+    .features-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .features-list li {
+        padding: 12px 0;
+        border-bottom: 1px solid #eee;
+        font-size: 16px;
+    }
+
+    .features-list li:last-child {
+        border-bottom: none;
+    }
+
+    .auth-notice {
+        max-width: 600px;
+        margin: 0 auto 30px;
+    }
+
+    .cta-button {
+        font-size: 18px;
+        padding: 15px 35px;
+    }
+
+    @media screen and (max-width: 768px) {
+        .landing-container {
+            padding: 30px 15px;
+        }
+
+        .landing-title {
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+
+        .landing-subtitle {
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        .features-container {
+            margin-bottom: 30px;
+        }
+
+        .features-title {
+            font-size: 22px;
+            margin-bottom: 15px;
+        }
+
+        .features-list li {
+            padding: 10px 0;
+            font-size: 15px;
+        }
+
+        .cta-button {
+            font-size: 16px;
+            padding: 12px 28px;
+            width: 100%;
+            max-width: 300px;
+        }
+    }
+
+    @media screen and (max-width: 480px) {
+        .landing-container {
+            padding: 20px 10px;
+        }
+
+        .landing-title {
+            font-size: 26px;
+            line-height: 1.2;
+        }
+
+        .landing-subtitle {
+            font-size: 15px;
+        }
+
+        .features-title {
+            font-size: 20px;
+        }
+
+        .features-list li {
+            font-size: 14px;
+            padding: 8px 0;
+        }
+
+        .auth-notice {
+            font-size: 14px;
+        }
+
+        .cta-button {
+            font-size: 15px;
+            padding: 12px 24px;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="text-align: center; padding: 50px 20px;">
-    <h1 style="font-size: 48px; margin-bottom: 20px; color: #667eea;">Welcome to Transcription Bot</h1>
-    <p style="font-size: 20px; margin-bottom: 40px; color: #666;">
+<div class="landing-container">
+    <h1 class="landing-title">Welcome to Transcription Bot</h1>
+    <p class="landing-subtitle">
         Audio & Video Transcription Service
     </p>
 
-    <div style="max-width: 600px; margin: 0 auto 40px; text-align: left;">
-        <h2 style="color: #667eea; margin-bottom: 20px;">Features</h2>
-        <ul style="list-style: none; padding: 0;">
-            <li style="padding: 10px 0; border-bottom: 1px solid #eee;">
-                ✅ High-quality AI transcription
-            </li>
-            <li style="padding: 10px 0; border-bottom: 1px solid #eee;">
-                ✅ Support for audio and video files
-            </li>
-            <li style="padding: 10px 0; border-bottom: 1px solid #eee;">
-                ✅ Upload files up to 100 MB
-            </li>
-            <li style="padding: 10px 0; border-bottom: 1px solid #eee;">
-                ✅ Fast processing
-            </li>
-            <li style="padding: 10px 0;">
-                ✅ Secure and private
-            </li>
+    <div class="features-container">
+        <h2 class="features-title">Features</h2>
+        <ul class="features-list">
+            <li>✅ High-quality AI transcription</li>
+            <li>✅ Support for audio and video files</li>
+            <li>✅ Upload files up to 100 MB</li>
+            <li>✅ Fast processing</li>
+            <li>✅ Secure and private</li>
         </ul>
     </div>
 
-    <div class="alert alert-info" style="max-width: 600px; margin: 0 auto 30px;">
+    <div class="alert alert-info auth-notice">
         <strong>📱 Authentication Required</strong><br>
         To use this web interface, please authenticate through our Telegram bot.<br>
         The bot will provide you with a secure one-time login link.
     </div>
 
-    <a href="https://t.me/Test_NJ_bot" class="btn" style="font-size: 18px; padding: 15px 30px;">
+    <a href="https://t.me/Test_NJ_bot" class="btn cta-button">
         Open Telegram Bot
     </a>
 </div>

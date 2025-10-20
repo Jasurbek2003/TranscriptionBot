@@ -4,15 +4,33 @@
 
 {% block extra_css %}
 <style>
+    .balance-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+    }
+
+    .balance-header h3 {
+        margin-bottom: 8px;
+    }
+
+    .balance-header p {
+        opacity: 0.9;
+        margin-top: 8px;
+        font-size: 14px;
+    }
+
     .upload-area {
         border: 3px dashed #667eea;
         border-radius: 10px;
-        padding: 60px 20px;
+        padding: 50px 20px;
         text-align: center;
         background: #f8f9fa;
         cursor: pointer;
         transition: all 0.3s;
-        margin-bottom: 30px;
+        margin-bottom: 25px;
     }
 
     .upload-area:hover {
@@ -25,6 +43,21 @@
         border-color: #5568d3;
     }
 
+    .upload-icon {
+        font-size: 48px;
+        margin-bottom: 18px;
+    }
+
+    .upload-area h2 {
+        margin-bottom: 10px;
+        font-size: 22px;
+    }
+
+    .upload-area p {
+        color: #666;
+        margin-bottom: 15px;
+    }
+
     #file-input {
         display: none;
     }
@@ -35,6 +68,21 @@
         border-radius: 8px;
         margin-top: 20px;
         display: none;
+    }
+
+    .file-info h3 {
+        margin-bottom: 10px;
+    }
+
+    .file-info p {
+        margin-bottom: 15px;
+        color: #666;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
     }
 
     .progress-bar {
@@ -66,15 +114,158 @@
         margin-top: 20px;
         display: none;
     }
+
+    .result-area h2 {
+        margin-bottom: 18px;
+    }
+
+    .transcription-box {
+        background: white;
+        padding: 18px;
+        border-radius: 8px;
+        margin-bottom: 18px;
+    }
+
+    .transcription-box h3 {
+        margin-bottom: 10px;
+    }
+
+    .transcription-text {
+        white-space: pre-wrap;
+        font-family: inherit;
+        line-height: 1.6;
+    }
+
+    .cost-info {
+        background: #e8f4f8;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 18px;
+    }
+
+    .cost-info p {
+        margin-bottom: 5px;
+    }
+
+    @media screen and (max-width: 768px) {
+        .balance-header {
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .balance-header h3 {
+            font-size: 18px;
+        }
+
+        .balance-header p {
+            font-size: 13px;
+        }
+
+        .upload-area {
+            padding: 40px 15px;
+            margin-bottom: 20px;
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+
+        .upload-area h2 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .upload-area p {
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .file-info {
+            padding: 15px;
+        }
+
+        .button-group {
+            gap: 10px;
+        }
+
+        .button-group .btn {
+            flex: 1;
+            min-width: calc(50% - 5px);
+        }
+
+        .result-area {
+            padding: 15px;
+        }
+
+        .transcription-box {
+            padding: 15px;
+        }
+
+        .cost-info {
+            padding: 12px;
+            font-size: 14px;
+        }
+    }
+
+    @media screen and (max-width: 480px) {
+        .balance-header {
+            padding: 12px;
+        }
+
+        .balance-header h3 {
+            font-size: 16px;
+        }
+
+        .upload-area {
+            padding: 30px 12px;
+        }
+
+        .upload-icon {
+            font-size: 36px;
+        }
+
+        .upload-area h2 {
+            font-size: 16px;
+        }
+
+        .upload-area p {
+            font-size: 13px;
+        }
+
+        .file-info {
+            padding: 12px;
+        }
+
+        .file-info h3 {
+            font-size: 16px;
+        }
+
+        .button-group .btn {
+            min-width: 100%;
+        }
+
+        .transcription-box {
+            padding: 12px;
+        }
+
+        .transcription-box h3 {
+            font-size: 16px;
+        }
+
+        .transcription-text {
+            font-size: 14px;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <h1 style="margin-bottom: 20px;">Upload File</h1>
 
-<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+<div class="balance-header">
     <h3>Your Balance: {{ wallet.balance|default:0|floatformat:2 }} UZS</h3>
-    <p style="opacity: 0.9; margin-top: 10px;">
+    <p>
         Audio: {{ settings.pricing.audio_price_per_min|floatformat:0 }} UZS/min •
         Video: {{ settings.pricing.video_price_per_min|floatformat:0 }} UZS/min
     </p>
@@ -82,12 +273,12 @@
 
 <form id="upload-form">
     <div class="upload-area" id="upload-area">
-        <div style="font-size: 48px; margin-bottom: 20px;">📤</div>
-        <h2 style="margin-bottom: 10px;">Drop your file here or click to browse</h2>
-        <p style="color: #666; margin-bottom: 20px;">
+        <div class="upload-icon">📤</div>
+        <h2>Drop your file here or click to browse</h2>
+        <p>
             Supported formats: MP3, WAV, OGG, M4A, MP4, AVI, MOV, MKV
         </p>
-        <p style="color: #666; font-size: 14px;">
+        <p style="font-size: 14px;">
             Max file size: {{ max_file_size_mb }} MB •
             Max duration: {{ max_audio_duration_min }} min (audio), {{ max_video_duration_min }} min (video)
         </p>
@@ -99,8 +290,10 @@
     <h3>Selected File:</h3>
     <p id="file-name"></p>
     <p id="file-size"></p>
-    <button class="btn" id="upload-btn" onclick="uploadFile()">Start Transcription</button>
-    <button class="btn btn-secondary" onclick="resetUpload()">Cancel</button>
+    <div class="button-group">
+        <button class="btn" id="upload-btn" onclick="uploadFile()">Start Transcription</button>
+        <button class="btn btn-secondary" onclick="resetUpload()">Cancel</button>
+    </div>
 </div>
 
 <div class="progress-bar" id="progress-bar">
@@ -108,16 +301,16 @@
 </div>
 
 <div class="result-area" id="result-area">
-    <h2 style="margin-bottom: 20px;">✅ Transcription Complete!</h2>
-    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-        <h3 style="margin-bottom: 10px;">Transcription:</h3>
-        <pre id="transcription-text" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;"></pre>
+    <h2>✅ Transcription Complete!</h2>
+    <div class="transcription-box">
+        <h3>Transcription:</h3>
+        <pre id="transcription-text" class="transcription-text"></pre>
     </div>
-    <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+    <div class="cost-info">
         <p><strong>Cost:</strong> <span id="cost"></span> UZS</p>
         <p><strong>New Balance:</strong> <span id="new-balance"></span> UZS</p>
     </div>
-    <div>
+    <div class="button-group">
         <button class="btn" onclick="downloadTranscription()">📥 Download</button>
         <button class="btn btn-secondary" onclick="resetUpload()">Upload Another</button>
     </div>
