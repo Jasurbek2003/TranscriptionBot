@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Add Funds - Transcription Bot{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-container {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .payment-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .payment-header h1 {
+        color: #667eea;
+        margin-bottom: 10px;
+    }
+
+    .current-balance {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .current-balance h3 {
+        font-size: 16px;
+        opacity: 0.9;
+        margin-bottom: 10px;
+    }
+
+    .current-balance p {
+        font-size: 36px;
+        font-weight: bold;
+    }
+
+    .amount-selection {
+        margin-bottom: 30px;
+    }
+
+    .amount-selection h3 {
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .amount-buttons {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .amount-btn {
+        padding: 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 16px;
+        font-weight: 500;
+    }
+
+    .amount-btn:hover {
+        border-color: #667eea;
+        background: #f5f7ff;
+    }
+
+    .amount-btn.active {
+        border-color: #667eea;
+        background: #667eea;
+        color: white;
+    }
+
+    .custom-amount {
+        margin-top: 15px;
+    }
+
+    .custom-amount label {
+        display: block;
+        margin-bottom: 8px;
+        color: #666;
+    }
+
+    .custom-amount input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 16px;
+    }
+
+    .custom-amount input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .payment-methods {
+        margin-bottom: 30px;
+    }
+
+    .payment-methods h3 {
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .payment-method-buttons {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .payment-method-btn {
+        padding: 20px;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+    }
+
+    .payment-method-btn:hover {
+        border-color: #667eea;
+        background: #f5f7ff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .payment-method-btn img {
+        height: 40px;
+        margin-bottom: 10px;
+    }
+
+    .payment-method-btn .method-name {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .submit-btn {
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .submit-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .info-box {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 20px;
+        border-left: 4px solid #667eea;
+    }
+
+    .info-box p {
+        color: #666;
+        font-size: 14px;
+        margin: 5px 0;
+    }
+
+    .error-message {
+        background: #fee;
+        color: #c33;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: none;
+    }
+
+    @media screen and (max-width: 768px) {
+        .payment-container {
+            padding: 20px;
+        }
+
+        .amount-buttons {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .payment-method-buttons {
+            grid-template-columns: 1fr;
+        }
+
+        .current-balance p {
+            font-size: 28px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-container">
+    <div class="payment-header">
+        <h1>💰 Add Funds to Wallet</h1>
+        <p>Top up your balance to continue using transcription services</p>
+    </div>
+
+    <div class="current-balance">
+        <h3>Current Balance</h3>
+        <p id="current-balance">{{ wallet.balance|floatformat:0 }} UZS</p>
+    </div>
+
+    <div class="error-message" id="error-message"></div>
+
+    <div class="amount-selection">
+        <h3>Select Amount</h3>
+        <div class="amount-buttons">
+            <button class="amount-btn" data-amount="5000">5,000 UZS</button>
+            <button class="amount-btn" data-amount="10000">10,000 UZS</button>
+            <button class="amount-btn" data-amount="25000">25,000 UZS</button>
+            <button class="amount-btn" data-amount="50000">50,000 UZS</button>
+            <button class="amount-btn" data-amount="100000">100,000 UZS</button>
+            <button class="amount-btn" data-amount="250000">250,000 UZS</button>
+        </div>
+        <div class="custom-amount">
+            <label for="custom-amount-input">Or enter custom amount</label>
+            <input type="number" id="custom-amount-input" placeholder="Enter amount in UZS" min="1000" step="1000">
+        </div>
+    </div>
+
+    <div class="payment-methods">
+        <h3>Select Payment Method</h3>
+        <div class="payment-method-buttons">
+            <button class="payment-method-btn" data-method="click" id="click-btn">
+                <div class="method-name">💳 Click</div>
+                <p style="color: #888; font-size: 13px; margin-top: 5px;">Uzcard, Humo</p>
+            </button>
+            <button class="payment-method-btn" data-method="payme" id="payme-btn">
+                <div class="method-name">💰 Payme</div>
+                <p style="color: #888; font-size: 13px; margin-top: 5px;">Uzcard, Humo</p>
+            </button>
+        </div>
+    </div>
+
+    <div class="info-box">
+        <p><strong>ℹ️ Payment Information:</strong></p>
+        <p>• Minimum amount: 1,000 UZS</p>
+        <p>• Funds will be added instantly after successful payment</p>
+        <p>• Secure payment processing via Click and Payme</p>
+    </div>
+</div>
+
+<script>
+    let selectedAmount = null;
+    let selectedMethod = null;
+
+    // CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const csrftoken = getCookie('csrftoken');
+
+    // Amount selection
+    document.querySelectorAll('.amount-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedAmount = parseInt(btn.dataset.amount);
+            document.getElementById('custom-amount-input').value = '';
+        });
+    });
+
+    // Custom amount input
+    document.getElementById('custom-amount-input').addEventListener('input', (e) => {
+        document.querySelectorAll('.amount-btn').forEach(b => b.classList.remove('active'));
+        selectedAmount = parseInt(e.target.value) || null;
+    });
+
+    // Payment method buttons
+    document.getElementById('click-btn').addEventListener('click', async () => {
+        if (!selectedAmount || selectedAmount < 1000) {
+            showError('Please select or enter an amount (minimum 1,000 UZS)');
+            return;
+        }
+        await initiatePayment('click', selectedAmount);
+    });
+
+    document.getElementById('payme-btn').addEventListener('click', async () => {
+        if (!selectedAmount || selectedAmount < 1000) {
+            showError('Please select or enter an amount (minimum 1,000 UZS)');
+            return;
+        }
+        await initiatePayment('payme', selectedAmount);
+    });
+
+    function showError(message) {
+        const errorDiv = document.getElementById('error-message');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+        }, 5000);
+    }
+
+    async function initiatePayment(gateway, amount) {
+        try {
+            const response = await fetch('/api/payment/initiate/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    gateway: gateway,
+                    amount: amount
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Redirect to payment gateway
+                if (data.payment_url) {
+                    window.location.href = data.payment_url;
+                } else {
+                    showError('Payment URL not received');
+                }
+            } else {
+                showError(data.error || 'Failed to initiate payment');
+            }
+        } catch (error) {
+            console.error('Payment error:', error);
+            showError('An error occurred. Please try again.');
+        }
+    }
+</script>
+{% endblock %}

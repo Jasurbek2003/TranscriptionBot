@@ -192,6 +192,24 @@ def transcriptions_page(request):
         }, status=500)
 
 
+@login_required
+def payment_page(request):
+    """Payment/top-up page"""
+    try:
+        # Get user's wallet
+        wallet = Wallet.objects.get(user=request.user)
+
+        return render(request, 'payment.html', {
+            'user': request.user,
+            'wallet': wallet
+        })
+    except Wallet.DoesNotExist:
+        return render(request, 'error.html', {
+            'error': 'Wallet not found',
+            'message': 'Your wallet was not found. Please contact support.'
+        }, status=500)
+
+
 def user_logout(request):
     """Logout user"""
     logout(request)
@@ -469,3 +487,86 @@ def upload_file(request):
     except Exception as e:
         logger.error(f"Upload error: {e}", exc_info=True)
         return JsonResponse({'error': f'Upload failed: {str(e)}'}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def initiate_payment(request):
+    """Initiate payment with Click or Payme"""
+    try:
+        from apps.transactions.models import Transaction
+        import uuid
+
+        # Get payment data
+        data = json.loads(request.body)
+        gateway = data.get('gateway')  # 'click' or 'payme'
+        amount = Decimal(str(data.get('amount', 0)))
+
+        # Validate
+        if gateway not in ['click', 'payme']:
+            return JsonResponse({'error': 'Invalid payment gateway'}, status=400)
+
+        if amount < 1000:
+            return JsonResponse({'error': 'Minimum amount is 1,000 UZS'}, status=400)
+
+        # Get user's wallet
+        wallet = Wallet.objects.get(user=request.user)
+
+        # Create transaction record
+        transaction = Transaction.objects.create(
+            user=request.user,
+            wallet=wallet,
+            type='credit',
+            amount=amount,
+            currency='UZS',
+            status='pending',
+            gateway=gateway,
+            reference_id=str(uuid.uuid4()),
+            balance_before=wallet.balance
+        )
+
+        # Generate payment URL
+        if gateway == 'click':
+            # Click payment URL
+            from django.conf import settings as django_settings
+            merchant_id = django_settings.CLICK_MERCHANT_ID
+            service_id = django_settings.CLICK_SERVICE_ID
+
+            payment_url = f"https://my.click.uz/services/pay?service_id={service_id}&merchant_id={merchant_id}&amount={amount}&transaction_param={transaction.reference_id}&return_url={request.scheme}://{request.get_host()}/payment/callback/"
+
+        elif gateway == 'payme':
+            # Payme payment URL
+            from django.conf import settings as django_settings
+            import base64
+
+            merchant_id = django_settings.PAYME_MERCHANT_ID
+
+            # Create params object
+            params = {
+                "m": merchant_id,
+                "ac.order_id": transaction.reference_id,
+                "a": int(amount * 100)  # Convert to tiyin
+            }
+
+            # Encode params
+            params_str = ";".join([f"{k}={v}" for k, v in params.items()])
+            params_encoded = base64.b64encode(params_str.encode()).decode()
+
+            payment_url = f"https://checkout.paycom.uz/{params_encoded}"
+
+        logger.info(f"Payment initiated: {gateway}, amount: {amount}, transaction: {transaction.id}")
+
+        return JsonResponse({
+            'success': True,
+            'payment_url': payment_url,
+            'transaction_id': transaction.id,
+            'reference_id': transaction.reference_id
+        })
+
+    except Wallet.DoesNotExist:
+        return JsonResponse({'error': 'Wallet not found'}, status=400)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        logger.error(f"Payment initiation error: {e}", exc_info=True)
+        return JsonResponse({'error': 'Failed to initiate payment'}, status=500)
