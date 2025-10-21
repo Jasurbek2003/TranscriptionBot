@@ -551,6 +551,16 @@ def payme_webhook(request):
                     )
                 )
 
+            # Check if transaction already has a different Payme transaction ID
+            if trans.external_id and trans.external_id != payme_trans_id and trans.gateway == "payme":
+                return JsonResponse(
+                    payme_service.error_response(
+                        code=payme_service.ERROR_CODES["CANT_PERFORM_OPERATION"],
+                        message="Order is already being processed by another transaction",
+                        request_id=request_id
+                    )
+                )
+
             # Check if already created (idempotency)
             if trans.external_id == payme_trans_id:
                 logger.info(f"Payme transaction {payme_trans_id} already created")
