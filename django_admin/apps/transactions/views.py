@@ -484,7 +484,9 @@ def payme_webhook(request):
                 )
 
             try:
+                print("Looking for transaction with order_id:", order_id)
                 trans = Transaction.objects.get(reference_id=order_id)
+                print("Found transaction", trans)
             except Transaction.DoesNotExist:
                 return JsonResponse(
                     payme_service.error_response(
