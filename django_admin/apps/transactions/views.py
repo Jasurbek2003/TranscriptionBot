@@ -792,8 +792,11 @@ def payme_webhook(request):
             from_time = params.get("from")
             to_time = params.get("to")
 
-            from_dt = timezone.datetime.fromtimestamp(from_time / 1000, tz=timezone.utc)
-            to_dt = timezone.datetime.fromtimestamp(to_time / 1000, tz=timezone.utc)
+            from datetime import datetime
+            from django.utils.timezone import utc
+
+            from_dt = datetime.fromtimestamp(from_time / 1000, tz=utc)
+            to_dt = datetime.fromtimestamp(to_time / 1000, tz=utc)
 
             transactions = Transaction.objects.filter(
                 gateway="payme",
