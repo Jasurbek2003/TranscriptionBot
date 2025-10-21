@@ -82,12 +82,5 @@ async def show_transaction_history(message: Message, user):
         )
 
 
-@router.message(F.text.in_(["/topup", "💳 Top Up", "💳 Add Money"]))
-async def show_topup_info(message: Message):
-    """Show top-up information (placeholder)."""
-    await message.answer(
-        "💳 <b>Top Up Your Balance</b>\n\n"
-        "🚧 Payment system is currently under development.\n\n"
-        "For now, contact an administrator to add funds to your account.\n\n"
-        "💡 <i>Payment methods will be available soon!</i>"
-    )
+# Topup handler removed - now handled in payment.py with Click and Payme integration
+

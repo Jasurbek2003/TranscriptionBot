@@ -26,9 +26,9 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 
-@router.message(F.text == "💳 Top Up")
+@router.message(F.text.in_(["/topup", "💳 Top Up", "💳 Add Money"]))
 async def start_topup(message: Message, state: FSMContext):
-    """Start top-up process"""
+    """Start top-up process with Click and Payme payment methods"""
     await state.set_state(PaymentStates.choosing_payment_method)
 
     await message.answer(
