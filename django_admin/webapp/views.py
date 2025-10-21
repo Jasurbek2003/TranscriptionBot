@@ -495,6 +495,7 @@ def initiate_payment(request):
     """Initiate payment with Click or Payme"""
     try:
         from apps.transactions.models import Transaction
+        from core.enums import TransactionType, TransactionStatus, PaymentMethod
         import uuid
 
         # Get payment data
@@ -512,17 +513,24 @@ def initiate_payment(request):
         # Get user's wallet
         wallet = Wallet.objects.get(user=request.user)
 
+        # Map gateway to payment method
+        payment_method_map = {
+            'click': PaymentMethod.CLICK.value,
+            'payme': PaymentMethod.PAYME.value
+        }
+
         # Create transaction record
         transaction = Transaction.objects.create(
             user=request.user,
             wallet=wallet,
-            type='credit',
+            type=TransactionType.CREDIT.value,
             amount=amount,
-            currency='UZS',
-            status='pending',
+            status=TransactionStatus.PENDING.value,
+            payment_method=payment_method_map[gateway],
             gateway=gateway,
             reference_id=str(uuid.uuid4()),
-            balance_before=wallet.balance
+            balance_before=wallet.balance,
+            description=f"Top-up via {gateway.upper()}"
         )
 
         # Generate payment URL
