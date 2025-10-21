@@ -485,7 +485,7 @@ def payme_webhook(request):
 
             try:
                 print("Looking for transaction with order_id:", order_id)
-                print("All transactions:", Transaction.objects.all())
+                print("All transactions:", Transaction.objects.all().values("id", "reference_id", "amount", "status"), sep="\n")
                 trans = Transaction.objects.get(reference_id=order_id)
                 print("Found transaction", trans)
             except Transaction.DoesNotExist:
