@@ -15,7 +15,7 @@ class TransactionAdmin(admin.ModelAdmin):
         'type_badge',
         'amount_display',
         'payment_method',
-        'gateway_badge',
+        # 'gateway_badge',
         'status_badge',
         'created_at'
     ]
