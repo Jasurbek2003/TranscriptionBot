@@ -34,6 +34,7 @@ class PaymeService:
         "CANT_PERFORM_OPERATION": -31008,
         # Account errors (customizable -31050 to -31099)
         "INVALID_ACCOUNT": -31050,
+        "ALREADY_PROCESSED": -31051,
         # RPC errors
         "TRANSPORT_ERROR": -32300,
         "PARSE_ERROR": -32700,

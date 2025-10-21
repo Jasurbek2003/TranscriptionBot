@@ -555,7 +555,7 @@ def payme_webhook(request):
             if trans.external_id and trans.external_id != payme_trans_id and trans.gateway == "payme":
                 return JsonResponse(
                     payme_service.error_response(
-                        code=payme_service.ERROR_CODES["CANT_PERFORM_OPERATION"],
+                        code=payme_service.ERROR_CODES["ALREADY_PROCESSED"],
                         message="Order is already being processed by another transaction",
                         request_id=request_id
                     )
