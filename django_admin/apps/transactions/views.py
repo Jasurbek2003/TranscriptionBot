@@ -484,15 +484,13 @@ def payme_webhook(request):
                 )
 
             try:
-                print("Looking for transaction with order_id:", order_id)
-                print("All transactions:", Transaction.objects.all().values("id", "reference_id", "amount", "status"), sep="\n")
                 trans = Transaction.objects.get(reference_id=order_id)
-                print("Found transaction", trans)
             except Transaction.DoesNotExist:
                 return JsonResponse(
                     payme_service.error_response(
-                        code=payme_service.ERROR_CODES["TRANSACTION_NOT_FOUND"],
-                        message="Transaction not found",
+                        code=payme_service.ERROR_CODES["INVALID_ACCOUNT"],
+                        message="Invalid order_id",
+                        data="order_id",
                         request_id=request_id
                     )
                 )
@@ -546,8 +544,9 @@ def payme_webhook(request):
             except Transaction.DoesNotExist:
                 return JsonResponse(
                     payme_service.error_response(
-                        code=payme_service.ERROR_CODES["TRANSACTION_NOT_FOUND"],
-                        message="Transaction not found",
+                        code=payme_service.ERROR_CODES["INVALID_ACCOUNT"],
+                        message="Invalid order_id",
+                        data="order_id",
                         request_id=request_id
                     )
                 )
