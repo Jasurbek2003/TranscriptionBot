@@ -209,10 +209,10 @@ async def process_payment(
             secret_key=settings.payment.payme_secret_key,
             test_mode=settings.payment.payme_test_mode
         )
-        payment_url = await payment_service.create_payment_link(
+        payment_url = payment_service.create_payment_link(
             amount=amount,
             order_id=transaction_id,
-            user_id=str(user.telegram_id)
+            return_url=None  # Optional: add return URL if needed
         )
     elif payment_method == "click":
         payment_service = ClickService(
@@ -221,10 +221,10 @@ async def process_payment(
             secret_key=settings.payment.click_secret_key,
             test_mode=settings.payment.click_test_mode
         )
-        payment_url = await payment_service.create_payment_link(
+        payment_url = payment_service.create_payment_link(
             amount=amount,
             order_id=transaction_id,
-            user_id=str(user.telegram_id)
+            return_url=None  # Optional: add return URL if needed
         )
     else:
         await message.answer("❌ Invalid payment method")

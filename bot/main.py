@@ -13,6 +13,7 @@ from bot.django_setup import *
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.client.telegram import TelegramAPIServer
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 # from aiogram.fsm.storage.redis import RedisStorage
@@ -103,7 +104,8 @@ async def main():
         # Initialize bot with custom API server if configured
         if settings.bot_api_server:
             logger.info(f"Using custom Bot API server: {settings.bot_api_server}")
-            session = AiohttpSession(api=settings.bot_api_server)
+            api = TelegramAPIServer.from_base(settings.bot_api_server)
+            session = AiohttpSession(api=api)
             bot = Bot(
                 token=settings.bot_token,
                 session=session,
