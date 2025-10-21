@@ -683,6 +683,24 @@ def payme_webhook(request):
                     )
                 )
 
+            # Check if already cancelled (idempotency)
+            if trans.status in ["cancelled", "refunded"]:
+                # Determine state based on current status
+                if trans.status == "refunded":
+                    state = payme_service.STATES["CANCELLED_AFTER_COMPLETE"]
+                else:
+                    state = payme_service.STATES["CANCELLED"]
+
+                logger.info(f"Payme transaction {payme_trans_id} already cancelled")
+                return JsonResponse(
+                    payme_service.cancel_transaction_response(
+                        transaction=str(trans.id),
+                        cancel_time=int(trans.updated_at.timestamp() * 1000),
+                        state=state,
+                        request_id=request_id
+                    )
+                )
+
             # Determine cancellation state
             if trans.status == "completed":
                 state = payme_service.STATES["CANCELLED_AFTER_COMPLETE"]
