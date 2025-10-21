@@ -218,3 +218,19 @@ if LOGS_DIR.exists():
     }
     LOGGING['root']['handlers'].append('file')
     LOGGING['loggers']['django']['handlers'].append('file')
+
+
+# ============================================================================
+# PAYMENT GATEWAY SETTINGS
+# ============================================================================
+
+# Click Payment Gateway
+CLICK_MERCHANT_ID = os.getenv('CLICK_MERCHANT_ID', '')
+CLICK_SERVICE_ID = os.getenv('CLICK_SERVICE_ID', '')
+CLICK_SECRET_KEY = os.getenv('CLICK_SECRET_KEY', '')
+CLICK_TEST_MODE = os.getenv('CLICK_TEST_MODE', 'True') == 'True'
+
+# Payme Payment Gateway
+PAYME_MERCHANT_ID = os.getenv('PAYME_MERCHANT_ID', '')
+PAYME_SECRET_KEY = os.getenv('PAYME_SECRET_KEY', '')
+PAYME_TEST_MODE = os.getenv('PAYME_TEST_MODE', 'True') == 'True'

@@ -23,7 +23,7 @@ from bot.handlers import (
     start,
     media,
     balance,
-    # payment,
+    payment,
     # wallet,
     # history,
     # admin,  # Commented out - needs Django ORM refactoring
@@ -146,9 +146,9 @@ async def main():
         # Register routers (media router first to handle transcription properly)
         dp.include_router(webapp.router)  # Webapp handler
         dp.include_router(media.router)
+        dp.include_router(payment.router)  # Payment handlers with Click and Payme
         dp.include_router(balance.router)
         dp.include_router(start.router)
-        # dp.include_router(payment.router)
         # dp.include_router(wallet.router)
         # dp.include_router(history.router)
         # dp.include_router(admin.router)
