@@ -15,6 +15,7 @@ class TransactionAdmin(admin.ModelAdmin):
         'type_badge',
         'amount_display',
         'payment_method',
+        'gateway_badge',
         'status_badge',
         'created_at'
     ]
@@ -23,12 +24,14 @@ class TransactionAdmin(admin.ModelAdmin):
         'type',
         'status',
         'payment_method',
+        'gateway',
         'created_at'
     ]
 
     search_fields = [
         'reference_id',
         'external_id',
+        'gateway_transaction_id',
         'user__telegram_id',
         'user__telegram_username',
         'description'
@@ -52,8 +55,8 @@ class TransactionAdmin(admin.ModelAdmin):
         }),
         (_('Payment Details'), {
             'fields': (
-                'payment_method', 'status', 'reference_id',
-                'external_id', 'processed_at', 'failed_reason'
+                'payment_method', 'gateway', 'status', 'reference_id',
+                'external_id', 'gateway_transaction_id', 'processed_at', 'failed_reason'
             )
         }),
         (_('Related Object'), {
