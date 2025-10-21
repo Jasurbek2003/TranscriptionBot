@@ -55,6 +55,8 @@ async def choose_payment_method(
         await callback.answer()
         return
 
+    print("Selected payment method:", method)
+
     # Save payment method
     await state.update_data(payment_method=method)
     await state.set_state(PaymentStates.entering_amount)
@@ -63,8 +65,8 @@ async def choose_payment_method(
     await callback.message.edit_text(
         f"💰 <b>Enter Amount</b>\n\n"
         f"Payment method: {method.capitalize()}\n"
-        f"Minimum: {settings.MIN_PAYMENT_AMOUNT:,.0f} UZS\n"
-        f"Maximum: {settings.MAX_PAYMENT_AMOUNT:,.0f} UZS\n\n"
+        f"Minimum: {settings.pricing.min_payment_amount:,.0f} UZS\n"
+        f"Maximum: {settings.pricing.max_payment_amount:,.0f} UZS\n\n"
         f"Select or enter custom amount:",
         reply_markup=get_amount_keyboard()
     )
