@@ -691,15 +691,21 @@ def payme_webhook(request):
                 else:
                     state = payme_service.STATES["CANCELLED"]
 
+                # Get stored cancel_time from metadata
+                cancel_time = trans.metadata.get('payme_cancel_time', int(trans.updated_at.timestamp() * 1000))
+
                 logger.info(f"Payme transaction {payme_trans_id} already cancelled")
                 return JsonResponse(
                     payme_service.cancel_transaction_response(
                         transaction=str(trans.id),
-                        cancel_time=int(trans.updated_at.timestamp() * 1000),
+                        cancel_time=cancel_time,
                         state=state,
                         request_id=request_id
                     )
                 )
+
+            # Generate cancel_time once
+            cancel_time = payme_service.timestamp_ms()
 
             # Determine cancellation state
             if trans.status == "completed":
@@ -710,11 +716,21 @@ def payme_webhook(request):
                     wallet.save()
                     trans.status = "refunded"
                     trans.failed_reason = f"Payme refund: reason {reason}"
+                    # Store cancel_time and reason in metadata
+                    if not trans.metadata:
+                        trans.metadata = {}
+                    trans.metadata['payme_cancel_time'] = cancel_time
+                    trans.metadata['payme_cancel_reason'] = reason
                     trans.save()
             else:
                 state = payme_service.STATES["CANCELLED"]
                 trans.status = "cancelled"
                 trans.failed_reason = f"Payme cancellation: reason {reason}"
+                # Store cancel_time and reason in metadata
+                if not trans.metadata:
+                    trans.metadata = {}
+                trans.metadata['payme_cancel_time'] = cancel_time
+                trans.metadata['payme_cancel_reason'] = reason
                 trans.save()
 
             logger.info(f"Payme transaction cancelled: {payme_trans_id}, reason: {reason}")
@@ -722,7 +738,7 @@ def payme_webhook(request):
             return JsonResponse(
                 payme_service.cancel_transaction_response(
                     transaction=str(trans.id),
-                    cancel_time=payme_service.timestamp_ms(),
+                    cancel_time=cancel_time,
                     state=state,
                     request_id=request_id
                 )
@@ -751,14 +767,22 @@ def payme_webhook(request):
                 "refunded": payme_service.STATES["CANCELLED_AFTER_COMPLETE"],
             }
 
+            # Get cancel_time and reason from metadata if cancelled/refunded
+            if trans.status in ["cancelled", "refunded"]:
+                cancel_time = trans.metadata.get('payme_cancel_time', int(trans.updated_at.timestamp() * 1000))
+                cancel_reason = trans.metadata.get('payme_cancel_reason', None)
+            else:
+                cancel_time = 0
+                cancel_reason = None
+
             return JsonResponse(
                 payme_service.check_transaction_response(
                     create_time=int(trans.created_at.timestamp() * 1000),
                     perform_time=int(trans.processed_at.timestamp() * 1000) if trans.processed_at else 0,
-                    cancel_time=int(trans.updated_at.timestamp() * 1000) if trans.status in ["cancelled", "refunded"] else 0,
+                    cancel_time=cancel_time,
                     transaction=str(trans.id),
                     state=state_map.get(trans.status, 0),
-                    reason=None,
+                    reason=cancel_reason,
                     request_id=request_id
                 )
             )
@@ -788,6 +812,14 @@ def payme_webhook(request):
             trans_list = []
             for trans in transactions:
                 if trans.external_id:
+                    # Get cancel_time and reason from metadata if cancelled/refunded
+                    if trans.status in ["cancelled", "refunded"]:
+                        cancel_time = trans.metadata.get('payme_cancel_time', int(trans.updated_at.timestamp() * 1000))
+                        cancel_reason = trans.metadata.get('payme_cancel_reason', None)
+                    else:
+                        cancel_time = 0
+                        cancel_reason = None
+
                     trans_list.append({
                         "id": trans.external_id,
                         "time": int(trans.created_at.timestamp() * 1000),
@@ -795,10 +827,10 @@ def payme_webhook(request):
                         "account": {"order_id": trans.reference_id},
                         "create_time": int(trans.created_at.timestamp() * 1000),
                         "perform_time": int(trans.processed_at.timestamp() * 1000) if trans.processed_at else 0,
-                        "cancel_time": int(trans.updated_at.timestamp() * 1000) if trans.status in ["cancelled", "refunded"] else 0,
+                        "cancel_time": cancel_time,
                         "transaction": str(trans.id),
                         "state": state_map.get(trans.status, 0),
-                        "reason": None
+                        "reason": cancel_reason
                     })
 
             return JsonResponse(
