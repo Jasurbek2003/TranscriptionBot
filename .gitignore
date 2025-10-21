@@ -151,3 +151,6 @@ logs/
 
 # Templates (if generated)
 /django_admin/templates/admin/
+/bot/nul
+/django_admin/nul
+/django_admin/apps/transactions/migrations/0001_initial.py
