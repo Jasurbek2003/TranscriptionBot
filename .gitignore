@@ -61,6 +61,10 @@ db.sqlite3-journal
 /django_admin/db.sqlite3
 /django_admin/logs/
 
+# Django migrations (except __init__.py)
+**/migrations/[0-9]*.py
+**/migrations/0*.py
+
 # Flask stuff:
 instance/
 .webassets-cache
@@ -153,4 +157,3 @@ logs/
 /django_admin/templates/admin/
 /bot/nul
 /django_admin/nul
-/django_admin/apps/transactions/migrations/0001_initial.py
