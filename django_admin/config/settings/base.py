@@ -238,12 +238,12 @@ PAYME_TEST_MODE = os.getenv("PAYME_TEST_MODE", "True") == "True"
 
 # Initialize Sentry for error monitoring and performance tracking
 # See django_admin/config/sentry_config.py for configuration details
-try:
-    from .sentry_config import init_sentry
-
-    init_sentry(debug=DEBUG)
-except Exception as e:
-    import logging
-
-    logger = logging.getLogger(__name__)
-    logger.warning(f"Failed to initialize Sentry: {e}")
+# try:
+#     from .sentry_config import init_sentry
+#
+#     init_sentry(debug=DEBUG)
+# except Exception as e:
+#     import logging
+#
+#     logger = logging.getLogger(__name__)
+#     logger.warning(f"Failed to initialize Sentry: {e}")
