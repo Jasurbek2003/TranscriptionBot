@@ -1,10 +1,11 @@
-from rest_framework import viewsets, status
+from django.db.models import Sum
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from django.db.models import Q, Sum
+
 from .models import Transaction
-from .serializers import TransactionSerializer, CreateTransactionSerializer
+from .serializers import CreateTransactionSerializer, TransactionSerializer
 
 
 class TransactionViewSet(viewsets.ModelViewSet):
@@ -23,35 +24,35 @@ class TransactionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(user=self.request.user)
 
         # Apply filters
-        type_filter = self.request.query_params.get('type')
+        type_filter = self.request.query_params.get("type")
         if type_filter:
             queryset = queryset.filter(type=type_filter)
 
-        status_filter = self.request.query_params.get('status')
+        status_filter = self.request.query_params.get("status")
         if status_filter:
             queryset = queryset.filter(status=status_filter)
 
-        payment_method = self.request.query_params.get('payment_method')
+        payment_method = self.request.query_params.get("payment_method")
         if payment_method:
             queryset = queryset.filter(payment_method=payment_method)
 
         # Date range filter
-        from_date = self.request.query_params.get('from_date')
-        to_date = self.request.query_params.get('to_date')
+        from_date = self.request.query_params.get("from_date")
+        to_date = self.request.query_params.get("to_date")
         if from_date:
             queryset = queryset.filter(created_at__gte=from_date)
         if to_date:
             queryset = queryset.filter(created_at__lte=to_date)
 
-        return queryset.select_related('user', 'wallet')
+        return queryset.select_related("user", "wallet")
 
     def get_serializer_class(self):
         """Return appropriate serializer"""
-        if self.action == 'create':
+        if self.action == "create":
             return CreateTransactionSerializer
         return TransactionSerializer
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=["get"])
     def my_transactions(self, request):
         """Get current user's transactions"""
         transactions = self.get_queryset().filter(user=request.user)
@@ -64,51 +65,49 @@ class TransactionViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(transactions, many=True)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=["get"])
     def summary(self, request):
         """Get transaction summary"""
         queryset = self.get_queryset()
 
         summary = {
-            'total_transactions': queryset.count(),
-            'total_credited': queryset.filter(
-                type__in=['credit', 'bonus']
-            ).aggregate(Sum('amount'))['amount__sum'] or 0,
-            'total_debited': queryset.filter(
-                type='debit'
-            ).aggregate(Sum('amount'))['amount__sum'] or 0,
-            'pending': queryset.filter(status='pending').count(),
-            'completed': queryset.filter(status='completed').count(),
-            'failed': queryset.filter(status='failed').count(),
+            "total_transactions": queryset.count(),
+            "total_credited": queryset.filter(type__in=["credit", "bonus"]).aggregate(
+                Sum("amount")
+            )["amount__sum"]
+                              or 0,
+            "total_debited": queryset.filter(type="debit").aggregate(Sum("amount"))["amount__sum"]
+                             or 0,
+            "pending": queryset.filter(status="pending").count(),
+            "completed": queryset.filter(status="completed").count(),
+            "failed": queryset.filter(status="failed").count(),
         }
 
         return Response(summary)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    @action(detail=True, methods=["post"], permission_classes=[IsAdminUser])
     def complete(self, request, pk=None):
         """Mark transaction as completed"""
         transaction = self.get_object()
 
-        if transaction.status != 'pending':
+        if transaction.status != "pending":
             return Response(
-                {'error': 'Transaction is not pending'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "Transaction is not pending"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         transaction.complete()
         serializer = self.get_serializer(transaction)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    @action(detail=True, methods=["post"], permission_classes=[IsAdminUser])
     def fail(self, request, pk=None):
         """Mark transaction as failed"""
         transaction = self.get_object()
-        reason = request.data.get('reason', 'Failed by admin')
+        reason = request.data.get("reason", "Failed by admin")
 
-        if transaction.status != 'pending':
+        if transaction.status != "pending":
             return Response(
-                {'error': 'Transaction is not pending'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "Transaction is not pending"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         transaction.fail(reason)
@@ -120,21 +119,21 @@ class TransactionViewSet(viewsets.ModelViewSet):
 # PAYMENT GATEWAY WEBHOOKS
 # ============================================================================
 
+import json
+import logging
+import os
+import sys
+
+from django.db import transaction as db_transaction
 from django.http import JsonResponse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from django.utils import timezone
-from django.db import transaction as db_transaction
-from decimal import Decimal
-import logging
-import json
-import sys
-import os
 
 from apps.wallet.models import Wallet
 
 # Import payment services
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../services/payment'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../services/payment"))
 from click_service import ClickService
 from payme_service import PaymeService
 
@@ -172,11 +171,12 @@ def click_prepare(request):
 
         # Initialize Click service
         from django.conf import settings as django_settings
+
         click_service = ClickService(
             merchant_id=django_settings.CLICK_MERCHANT_ID,
             service_id=django_settings.CLICK_SERVICE_ID,
             secret_key=django_settings.CLICK_SECRET_KEY,
-            test_mode=django_settings.DEBUG
+            test_mode=django_settings.DEBUG,
         )
 
         # Verify signature
@@ -187,7 +187,7 @@ def click_prepare(request):
             amount=amount,
             action=action,
             sign_time=sign_time,
-            sign_string=sign_string
+            sign_string=sign_string,
         )
 
         if not is_valid:
@@ -195,17 +195,19 @@ def click_prepare(request):
             return JsonResponse(
                 click_service.error_response(
                     error=click_service.ERROR_CODES["SIGN_CHECK_FAILED"],
-                    error_note="Invalid signature"
+                    error_note="Invalid signature",
                 )
             )
 
         # Check if Click reported an error
         if error and int(error) < 0:
-            logger.warning(f"Click reported error for transaction {merchant_trans_id}: {error} - {error_note}")
+            logger.warning(
+                f"Click reported error for transaction {merchant_trans_id}: {error} - {error_note}"
+            )
             return JsonResponse(
                 click_service.error_response(
                     error=click_service.ERROR_CODES["ERROR_IN_REQUEST_FROM_CLICK"],
-                    error_note=f"Click error: {error_note}"
+                    error_note=f"Click error: {error_note}",
                 )
             )
 
@@ -217,17 +219,18 @@ def click_prepare(request):
             return JsonResponse(
                 click_service.error_response(
                     error=click_service.ERROR_CODES["TRANSACTION_DOES_NOT_EXIST"],
-                    error_note="Transaction not found"
+                    error_note="Transaction not found",
                 )
             )
 
         # Verify amount
         if float(amount) != float(trans.amount):
-            logger.error(f"Amount mismatch for transaction {merchant_trans_id}: {amount} != {trans.amount}")
+            logger.error(
+                f"Amount mismatch for transaction {merchant_trans_id}: {amount} != {trans.amount}"
+            )
             return JsonResponse(
                 click_service.error_response(
-                    error=click_service.ERROR_CODES["INVALID_AMOUNT"],
-                    error_note="Incorrect amount"
+                    error=click_service.ERROR_CODES["INVALID_AMOUNT"], error_note="Incorrect amount"
                 )
             )
 
@@ -237,7 +240,7 @@ def click_prepare(request):
             return JsonResponse(
                 click_service.error_response(
                     error=click_service.ERROR_CODES["ALREADY_PAID"],
-                    error_note="Transaction already processed"
+                    error_note="Transaction already processed",
                 )
             )
 
@@ -253,16 +256,13 @@ def click_prepare(request):
             click_service.prepare_response(
                 click_trans_id=click_trans_id,
                 merchant_trans_id=merchant_trans_id,
-                merchant_prepare_id=trans.id
+                merchant_prepare_id=trans.id,
             )
         )
 
     except Exception as e:
         logger.error(f"Click Prepare webhook error: {e}", exc_info=True)
-        return JsonResponse({
-            "error": -9,
-            "error_note": f"Internal error: {str(e)}"
-        })
+        return JsonResponse({"error": -9, "error_note": f"Internal error: {str(e)}"})
 
 
 @csrf_exempt
@@ -297,11 +297,12 @@ def click_complete(request):
 
         # Initialize Click service
         from django.conf import settings as django_settings
+
         click_service = ClickService(
             merchant_id=django_settings.CLICK_MERCHANT_ID,
             service_id=django_settings.CLICK_SERVICE_ID,
             secret_key=django_settings.CLICK_SECRET_KEY,
-            test_mode=django_settings.DEBUG
+            test_mode=django_settings.DEBUG,
         )
 
         # Verify signature (includes merchant_prepare_id for Complete)
@@ -313,7 +314,7 @@ def click_complete(request):
             action=action,
             sign_time=sign_time,
             sign_string=sign_string,
-            merchant_prepare_id=merchant_prepare_id  # Required for Complete
+            merchant_prepare_id=merchant_prepare_id,  # Required for Complete
         )
 
         if not is_valid:
@@ -321,17 +322,19 @@ def click_complete(request):
             return JsonResponse(
                 click_service.error_response(
                     error=click_service.ERROR_CODES["SIGN_CHECK_FAILED"],
-                    error_note="Invalid signature"
+                    error_note="Invalid signature",
                 )
             )
 
         # Check if Click reported an error
         if error and int(error) < 0:
-            logger.warning(f"Click reported error for transaction {merchant_trans_id}: {error} - {error_note}")
+            logger.warning(
+                f"Click reported error for transaction {merchant_trans_id}: {error} - {error_note}"
+            )
             return JsonResponse(
                 click_service.error_response(
                     error=click_service.ERROR_CODES["ERROR_IN_REQUEST_FROM_CLICK"],
-                    error_note=f"Click error: {error_note}"
+                    error_note=f"Click error: {error_note}",
                 )
             )
 
@@ -343,17 +346,18 @@ def click_complete(request):
             return JsonResponse(
                 click_service.error_response(
                     error=click_service.ERROR_CODES["TRANSACTION_DOES_NOT_EXIST"],
-                    error_note="Transaction not found"
+                    error_note="Transaction not found",
                 )
             )
 
         # Verify amount
         if float(amount) != float(trans.amount):
-            logger.error(f"Amount mismatch for transaction {merchant_trans_id}: {amount} != {trans.amount}")
+            logger.error(
+                f"Amount mismatch for transaction {merchant_trans_id}: {amount} != {trans.amount}"
+            )
             return JsonResponse(
                 click_service.error_response(
-                    error=click_service.ERROR_CODES["INVALID_AMOUNT"],
-                    error_note="Incorrect amount"
+                    error=click_service.ERROR_CODES["INVALID_AMOUNT"], error_note="Incorrect amount"
                 )
             )
 
@@ -364,7 +368,7 @@ def click_complete(request):
                 click_service.complete_response(
                     click_trans_id=click_trans_id,
                     merchant_trans_id=merchant_trans_id,
-                    merchant_confirm_id=trans.id
+                    merchant_confirm_id=trans.id,
                 )
             )
 
@@ -374,7 +378,7 @@ def click_complete(request):
             return JsonResponse(
                 click_service.error_response(
                     error=click_service.ERROR_CODES["TRANSACTION_CANCELLED"],
-                    error_note="Transaction was cancelled"
+                    error_note="Transaction was cancelled",
                 )
             )
 
@@ -402,16 +406,13 @@ def click_complete(request):
             click_service.complete_response(
                 click_trans_id=click_trans_id,
                 merchant_trans_id=merchant_trans_id,
-                merchant_confirm_id=trans.id
+                merchant_confirm_id=trans.id,
             )
         )
 
     except Exception as e:
         logger.error(f"Click Complete webhook error: {e}", exc_info=True)
-        return JsonResponse({
-            "error": -9,
-            "error_note": f"Internal error: {str(e)}"
-        })
+        return JsonResponse({"error": -9, "error_note": f"Internal error: {str(e)}"})
 
 
 @csrf_exempt
@@ -432,20 +433,21 @@ def payme_webhook(request):
     try:
         # Initialize Payme service
         from django.conf import settings as django_settings
+
         payme_service = PaymeService(
             merchant_id=django_settings.PAYME_MERCHANT_ID,
             secret_key=django_settings.PAYME_SECRET_KEY,
-            test_mode=django_settings.DEBUG
+            test_mode=django_settings.DEBUG,
         )
 
         # Verify Basic Auth
-        auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+        auth_header = request.headers.get("authorization", "")
         if not payme_service.verify_auth(auth_header):
             logger.error("Payme authentication failed")
             return JsonResponse(
                 payme_service.error_response(
                     code=payme_service.ERROR_CODES["INSUFFICIENT_PRIVILEGES"],
-                    message="Insufficient privileges"
+                    message="Insufficient privileges",
                 )
             )
 
@@ -456,8 +458,7 @@ def payme_webhook(request):
             logger.error(f"Invalid JSON in Payme request: {e}")
             return JsonResponse(
                 payme_service.error_response(
-                    code=payme_service.ERROR_CODES["PARSE_ERROR"],
-                    message="JSON parsing error"
+                    code=payme_service.ERROR_CODES["PARSE_ERROR"], message="JSON parsing error"
                 )
             )
 
@@ -479,7 +480,7 @@ def payme_webhook(request):
                         code=payme_service.ERROR_CODES["INVALID_ACCOUNT"],
                         message="Order ID is required",
                         data="order_id",
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
@@ -491,7 +492,7 @@ def payme_webhook(request):
                         code=payme_service.ERROR_CODES["INVALID_ACCOUNT"],
                         message="Invalid order_id",
                         data="order_id",
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
@@ -501,7 +502,7 @@ def payme_webhook(request):
                     payme_service.error_response(
                         code=payme_service.ERROR_CODES["INVALID_AMOUNT"],
                         message=f"Amount mismatch",
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
@@ -510,15 +511,12 @@ def payme_webhook(request):
                     payme_service.error_response(
                         code=payme_service.ERROR_CODES["CANT_PERFORM_OPERATION"],
                         message=f"Transaction already {trans.status}",
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
             return JsonResponse(
-                payme_service.check_perform_transaction_response(
-                    allow=True,
-                    request_id=request_id
-                )
+                payme_service.check_perform_transaction_response(allow=True, request_id=request_id)
             )
 
         # CreateTransaction
@@ -535,7 +533,7 @@ def payme_webhook(request):
                         code=payme_service.ERROR_CODES["INVALID_ACCOUNT"],
                         message="Order ID is required",
                         data="order_id",
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
@@ -547,17 +545,21 @@ def payme_webhook(request):
                         code=payme_service.ERROR_CODES["INVALID_ACCOUNT"],
                         message="Invalid order_id",
                         data="order_id",
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
             # Check if transaction already has a different Payme transaction ID
-            if trans.external_id and trans.external_id != payme_trans_id and trans.gateway == "payme":
+            if (
+                    trans.external_id
+                    and trans.external_id != payme_trans_id
+                    and trans.gateway == "payme"
+            ):
                 return JsonResponse(
                     payme_service.error_response(
                         code=payme_service.ERROR_CODES["ALREADY_PROCESSED"],
                         message="Order is already being processed by another transaction",
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
@@ -569,7 +571,7 @@ def payme_webhook(request):
                         create_time=int(trans.created_at.timestamp() * 1000),
                         transaction=str(trans.id),
                         state=payme_service.STATES["CREATED"],
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
@@ -579,7 +581,7 @@ def payme_webhook(request):
                     payme_service.error_response(
                         code=payme_service.ERROR_CODES["INVALID_AMOUNT"],
                         message="Amount mismatch",
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
@@ -588,7 +590,7 @@ def payme_webhook(request):
                     payme_service.error_response(
                         code=payme_service.ERROR_CODES["CANT_PERFORM_OPERATION"],
                         message=f"Transaction already {trans.status}",
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
@@ -603,7 +605,7 @@ def payme_webhook(request):
                     create_time=int(trans.created_at.timestamp() * 1000),
                     transaction=str(trans.id),
                     state=payme_service.STATES["CREATED"],
-                    request_id=request_id
+                    request_id=request_id,
                 )
             )
 
@@ -618,7 +620,7 @@ def payme_webhook(request):
                     payme_service.error_response(
                         code=payme_service.ERROR_CODES["TRANSACTION_NOT_FOUND"],
                         message="Transaction not found",
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
@@ -628,9 +630,11 @@ def payme_webhook(request):
                 return JsonResponse(
                     payme_service.perform_transaction_response(
                         transaction=str(trans.id),
-                        perform_time=int(trans.processed_at.timestamp() * 1000) if trans.processed_at else 0,
+                        perform_time=(
+                            int(trans.processed_at.timestamp() * 1000) if trans.processed_at else 0
+                        ),
                         state=payme_service.STATES["COMPLETED"],
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
@@ -639,7 +643,7 @@ def payme_webhook(request):
                     payme_service.error_response(
                         code=payme_service.ERROR_CODES["CANT_PERFORM_OPERATION"],
                         message=f"Transaction is {trans.status}",
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
@@ -656,14 +660,16 @@ def payme_webhook(request):
                 trans.processed_at = timezone.now()
                 trans.save()
 
-            logger.info(f"Payme payment completed: {trans.reference_id}, amount: {trans.amount} UZS")
+            logger.info(
+                f"Payme payment completed: {trans.reference_id}, amount: {trans.amount} UZS"
+            )
 
             return JsonResponse(
                 payme_service.perform_transaction_response(
                     transaction=str(trans.id),
                     perform_time=int(trans.processed_at.timestamp() * 1000),
                     state=payme_service.STATES["COMPLETED"],
-                    request_id=request_id
+                    request_id=request_id,
                 )
             )
 
@@ -679,7 +685,7 @@ def payme_webhook(request):
                     payme_service.error_response(
                         code=payme_service.ERROR_CODES["TRANSACTION_NOT_FOUND"],
                         message="Transaction not found",
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
@@ -692,7 +698,9 @@ def payme_webhook(request):
                     state = payme_service.STATES["CANCELLED"]
 
                 # Get stored cancel_time from metadata
-                cancel_time = trans.metadata.get('payme_cancel_time', int(trans.updated_at.timestamp() * 1000))
+                cancel_time = trans.metadata.get(
+                    "payme_cancel_time", int(trans.updated_at.timestamp() * 1000)
+                )
 
                 logger.info(f"Payme transaction {payme_trans_id} already cancelled")
                 return JsonResponse(
@@ -700,7 +708,7 @@ def payme_webhook(request):
                         transaction=str(trans.id),
                         cancel_time=cancel_time,
                         state=state,
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
@@ -719,8 +727,8 @@ def payme_webhook(request):
                     # Store cancel_time and reason in metadata
                     if not trans.metadata:
                         trans.metadata = {}
-                    trans.metadata['payme_cancel_time'] = cancel_time
-                    trans.metadata['payme_cancel_reason'] = reason
+                    trans.metadata["payme_cancel_time"] = cancel_time
+                    trans.metadata["payme_cancel_reason"] = reason
                     trans.save()
             else:
                 state = payme_service.STATES["CANCELLED"]
@@ -729,8 +737,8 @@ def payme_webhook(request):
                 # Store cancel_time and reason in metadata
                 if not trans.metadata:
                     trans.metadata = {}
-                trans.metadata['payme_cancel_time'] = cancel_time
-                trans.metadata['payme_cancel_reason'] = reason
+                trans.metadata["payme_cancel_time"] = cancel_time
+                trans.metadata["payme_cancel_reason"] = reason
                 trans.save()
 
             logger.info(f"Payme transaction cancelled: {payme_trans_id}, reason: {reason}")
@@ -740,7 +748,7 @@ def payme_webhook(request):
                     transaction=str(trans.id),
                     cancel_time=cancel_time,
                     state=state,
-                    request_id=request_id
+                    request_id=request_id,
                 )
             )
 
@@ -755,7 +763,7 @@ def payme_webhook(request):
                     payme_service.error_response(
                         code=payme_service.ERROR_CODES["TRANSACTION_NOT_FOUND"],
                         message="Transaction not found",
-                        request_id=request_id
+                        request_id=request_id,
                     )
                 )
 
@@ -769,8 +777,10 @@ def payme_webhook(request):
 
             # Get cancel_time and reason from metadata if cancelled/refunded
             if trans.status in ["cancelled", "refunded"]:
-                cancel_time = trans.metadata.get('payme_cancel_time', int(trans.updated_at.timestamp() * 1000))
-                cancel_reason = trans.metadata.get('payme_cancel_reason', None)
+                cancel_time = trans.metadata.get(
+                    "payme_cancel_time", int(trans.updated_at.timestamp() * 1000)
+                )
+                cancel_reason = trans.metadata.get("payme_cancel_reason", None)
             else:
                 cancel_time = 0
                 cancel_reason = None
@@ -778,12 +788,14 @@ def payme_webhook(request):
             return JsonResponse(
                 payme_service.check_transaction_response(
                     create_time=int(trans.created_at.timestamp() * 1000),
-                    perform_time=int(trans.processed_at.timestamp() * 1000) if trans.processed_at else 0,
+                    perform_time=(
+                        int(trans.processed_at.timestamp() * 1000) if trans.processed_at else 0
+                    ),
                     cancel_time=cancel_time,
                     transaction=str(trans.id),
                     state=state_map.get(trans.status, 0),
                     reason=cancel_reason,
-                    request_id=request_id
+                    request_id=request_id,
                 )
             )
 
@@ -792,16 +804,15 @@ def payme_webhook(request):
             from_time = params.get("from")
             to_time = params.get("to")
 
-            from datetime import datetime, timezone as dt_timezone
+            from datetime import datetime
+            from datetime import timezone as dt_timezone
 
             from_dt = datetime.fromtimestamp(from_time / 1000, tz=dt_timezone.utc)
             to_dt = datetime.fromtimestamp(to_time / 1000, tz=dt_timezone.utc)
 
             transactions = Transaction.objects.filter(
-                gateway="payme",
-                created_at__gte=from_dt,
-                created_at__lte=to_dt
-            ).order_by('created_at')
+                gateway="payme", created_at__gte=from_dt, created_at__lte=to_dt
+            ).order_by("created_at")
 
             state_map = {
                 "pending": payme_service.STATES["CREATED"],
@@ -816,30 +827,35 @@ def payme_webhook(request):
                 if trans.external_id:
                     # Get cancel_time and reason from metadata if cancelled/refunded
                     if trans.status in ["cancelled", "refunded"]:
-                        cancel_time = trans.metadata.get('payme_cancel_time', int(trans.updated_at.timestamp() * 1000))
-                        cancel_reason = trans.metadata.get('payme_cancel_reason', None)
+                        cancel_time = trans.metadata.get(
+                            "payme_cancel_time", int(trans.updated_at.timestamp() * 1000)
+                        )
+                        cancel_reason = trans.metadata.get("payme_cancel_reason", None)
                     else:
                         cancel_time = 0
                         cancel_reason = None
 
-                    trans_list.append({
-                        "id": trans.external_id,
-                        "time": int(trans.created_at.timestamp() * 1000),
-                        "amount": payme_service.amount_to_tiyin(trans.amount),
-                        "account": {"order_id": trans.reference_id},
-                        "create_time": int(trans.created_at.timestamp() * 1000),
-                        "perform_time": int(trans.processed_at.timestamp() * 1000) if trans.processed_at else 0,
-                        "cancel_time": cancel_time,
-                        "transaction": str(trans.id),
-                        "state": state_map.get(trans.status, 0),
-                        "reason": cancel_reason
-                    })
+                    trans_list.append(
+                        {
+                            "id": trans.external_id,
+                            "time": int(trans.created_at.timestamp() * 1000),
+                            "amount": payme_service.amount_to_tiyin(trans.amount),
+                            "account": {"order_id": trans.reference_id},
+                            "create_time": int(trans.created_at.timestamp() * 1000),
+                            "perform_time": (
+                                int(trans.processed_at.timestamp() * 1000)
+                                if trans.processed_at
+                                else 0
+                            ),
+                            "cancel_time": cancel_time,
+                            "transaction": str(trans.id),
+                            "state": state_map.get(trans.status, 0),
+                            "reason": cancel_reason,
+                        }
+                    )
 
             return JsonResponse(
-                payme_service.get_statement_response(
-                    transactions=trans_list,
-                    request_id=request_id
-                )
+                payme_service.get_statement_response(transactions=trans_list, request_id=request_id)
             )
 
         # Unknown method
@@ -849,16 +865,15 @@ def payme_webhook(request):
                 payme_service.error_response(
                     code=payme_service.ERROR_CODES["METHOD_NOT_FOUND"],
                     message=f"Method not found: {method}",
-                    request_id=request_id
+                    request_id=request_id,
                 )
             )
 
     except Exception as e:
         logger.error(f"Payme webhook error: {e}", exc_info=True)
-        return JsonResponse({
-            "error": {
-                "code": -32400,
-                "message": f"Internal error: {str(e)}"
-            },
-            "id": data.get("id") if 'data' in locals() else None
-        })
+        return JsonResponse(
+            {
+                "error": {"code": -32400, "message": f"Internal error: {str(e)}"},
+                "id": data.get("id") if "data" in locals() else None,
+            }
+        )

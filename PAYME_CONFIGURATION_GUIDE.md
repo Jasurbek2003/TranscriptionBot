@@ -20,11 +20,13 @@ params = {
 ```
 
 ### Generated Payment URL Format:
+
 ```
 https://checkout.paycom.uz?m=MERCHANT_ID&a=1000000&ac.order_id=TRANSACTION_UUID
 ```
 
 Example:
+
 ```
 https://checkout.paycom.uz?m=123456&a=1000000&ac.order_id=550e8400-e29b-41d4-a716-446655440000
 ```
@@ -38,11 +40,13 @@ https://checkout.paycom.uz?m=123456&a=1000000&ac.order_id=550e8400-e29b-41d4-a71
 When setting up your Payme merchant account, you configure **account fields**:
 
 #### ❌ WRONG Configuration:
+
 ```
 Account Field: telegram_id
 ```
 
 #### ✅ CORRECT Configuration:
+
 ```
 Account Field: order_id
 Account Type: String/Text
@@ -50,6 +54,7 @@ Required: Yes
 ```
 
 **How to Fix:**
+
 1. Go to Payme Merchant Dashboard
 2. Navigate to Settings → Integration → Account Parameters
 3. Change account field name from `telegram_id` to `order_id`
@@ -62,6 +67,7 @@ Required: Yes
 When Payme sends webhook requests, check the `account` parameter:
 
 #### What Payme Sends:
+
 ```json
 {
   "method": "CheckPerformTransaction",
@@ -75,6 +81,7 @@ When Payme sends webhook requests, check the `account` parameter:
 ```
 
 #### What Our Webhook Expects:
+
 ```python
 # django_admin/apps/transactions/views.py
 account = params.get("account", {})
@@ -152,6 +159,7 @@ curl -X POST http://localhost:8000/api/transactions/webhooks/payme/ \
 ```
 
 Expected response:
+
 ```json
 {
   "result": {
@@ -242,6 +250,7 @@ http://localhost:8000/admin/
 ### Transaction List View
 
 You'll see:
+
 - ✅ Reference ID (shortened)
 - ✅ User link
 - ✅ Type badge (Credit/Debit)
@@ -254,6 +263,7 @@ You'll see:
 ### Transaction Detail View
 
 Enhanced fields:
+
 - ✅ Gateway (payme/click)
 - ✅ Gateway Transaction ID (Payme's transaction ID)
 - ✅ External ID (Payme's transaction ID from CreateTransaction)
@@ -262,6 +272,7 @@ Enhanced fields:
 ### Search Capabilities
 
 You can now search by:
+
 - ✅ Reference ID
 - ✅ External ID (Payme transaction ID)
 - ✅ Gateway Transaction ID
@@ -271,6 +282,7 @@ You can now search by:
 ### Filter Options
 
 Filter transactions by:
+
 - ✅ Type (credit/debit)
 - ✅ Status (pending/completed/failed)
 - ✅ Payment Method
@@ -286,6 +298,7 @@ Filter transactions by:
 **Cause**: order_id in webhook doesn't match reference_id in database
 
 **Solution**:
+
 ```python
 # Check what Payme sent
 logger.info(f"Payme webhook params: {params}")
@@ -306,6 +319,7 @@ if not trans:
 **Cause**: Mismatch between payment link parameter and webhook lookup
 
 **Solution**:
+
 ```python
 # Verify payment link generation
 payment_url = payme.create_payment_link(amount=10000, order_id=transaction.reference_id)
@@ -322,6 +336,7 @@ order_id = params.get("account", {}).get("order_id")
 **Cause**: Payme merchant account configured with wrong field name
 
 **Solution**:
+
 1. Check Payme merchant dashboard settings
 2. Verify account field is named `order_id` not `telegram_id`
 3. If you change it, update all active payment links
@@ -345,33 +360,33 @@ order_id = params.get("account", {}).get("order_id")
 ### Transaction Admin Features
 
 1. **List View**:
-   - Click and Payme badges with colors
-   - Gateway field for filtering
-   - Reference ID (shortened for readability)
-   - Searchable by all IDs
+    - Click and Payme badges with colors
+    - Gateway field for filtering
+    - Reference ID (shortened for readability)
+    - Searchable by all IDs
 
 2. **Detail View**:
-   - All gateway-related fields
-   - Payment method and gateway
-   - Transaction IDs from payment gateways
-   - Related user and wallet
+    - All gateway-related fields
+    - Payment method and gateway
+    - Transaction IDs from payment gateways
+    - Related user and wallet
 
 3. **Actions**:
-   - Mark as completed (bulk action)
-   - Mark as failed (bulk action)
-   - Export to CSV
+    - Mark as completed (bulk action)
+    - Mark as failed (bulk action)
+    - Export to CSV
 
 ### Wallet Admin Features
 
 1. **List View**:
-   - User info with link
-   - Balance with color coding
-   - Total credited/debited
-   - Active/Inactive status
+    - User info with link
+    - Balance with color coding
+    - Total credited/debited
+    - Active/Inactive status
 
 2. **Actions**:
-   - Activate/Deactivate wallets
-   - Add bonus (100 UZS)
+    - Activate/Deactivate wallets
+    - Add bonus (100 UZS)
 
 ---
 
@@ -383,9 +398,11 @@ order_id = params.get("account", {}).get("order_id")
 - Webhooks expect `order_id` ✅
 - Admin panel enhanced with gateway tracking ✅
 
-If you're seeing `telegram_id` anywhere, it's likely in your Payme merchant dashboard configuration - update it to `order_id`.
+If you're seeing `telegram_id` anywhere, it's likely in your Payme merchant dashboard configuration - update it to
+`order_id`.
 
 **Need help?** Check Django admin logs at:
+
 ```
 django_admin/logs/django.log
 ```

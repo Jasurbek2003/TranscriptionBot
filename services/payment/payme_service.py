@@ -4,11 +4,11 @@ Payme Uzbekistan payment system integration using JSON-RPC 2.0 protocol.
 Official Documentation: https://developer.help.paycom.uz/
 """
 
-from typing import Dict, Any, Optional
 import base64
 import logging
-from urllib.parse import urlencode
 import time
+from typing import Any, Dict, Optional
+from urllib.parse import urlencode
 
 logger = logging.getLogger(__name__)
 
@@ -59,15 +59,10 @@ class PaymeService:
         3: "Error in request from click",
         4: "Timeout (transaction expired - 12 hours)",
         5: "Refund",
-        10: "Unknown"
+        10: "Unknown",
     }
 
-    def __init__(
-        self,
-        merchant_id: str,
-        secret_key: str,
-        test_mode: bool = True
-    ):
+    def __init__(self, merchant_id: str, secret_key: str, test_mode: bool = True):
         """Initialize Payme service.
 
         Args:
@@ -81,16 +76,11 @@ class PaymeService:
 
         # Payme URLs
         self.checkout_url = (
-            "https://checkout.paycom.uz"
-            if not test_mode
-            else "https://test.paycom.uz"
+            "https://checkout.paycom.uz" if not test_mode else "https://test.paycom.uz"
         )
 
     def create_payment_link(
-        self,
-        amount: float,
-        order_id: str,
-        return_url: Optional[str] = None
+            self, amount: float, order_id: str, return_url: Optional[str] = None
     ) -> str:
         """Create a payment link for user to complete payment.
 
@@ -163,10 +153,7 @@ class PaymeService:
             return False
 
     def build_response(
-        self,
-        result: Dict[str, Any] = None,
-        error: Dict[str, Any] = None,
-        request_id: Any = None
+            self, result: Dict[str, Any] = None, error: Dict[str, Any] = None, request_id: Any = None
     ) -> Dict[str, Any]:
         """Build JSON-RPC 2.0 response.
 
@@ -190,11 +177,7 @@ class PaymeService:
 
         return response
 
-    def success_response(
-        self,
-        result: Dict[str, Any],
-        request_id: Any = None
-    ) -> Dict[str, Any]:
+    def success_response(self, result: Dict[str, Any], request_id: Any = None) -> Dict[str, Any]:
         """Build success response.
 
         Args:
@@ -207,11 +190,7 @@ class PaymeService:
         return self.build_response(result=result, request_id=request_id)
 
     def error_response(
-        self,
-        code: int,
-        message: str,
-        data: Any = None,
-        request_id: Any = None
+            self, code: int, message: str, data: Any = None, request_id: Any = None
     ) -> Dict[str, Any]:
         """Build error response.
 
@@ -224,10 +203,7 @@ class PaymeService:
         Returns:
             Error response dictionary
         """
-        error = {
-            "code": code,
-            "message": message
-        }
+        error = {"code": code, "message": message}
 
         if data is not None:
             error["data"] = data
@@ -235,9 +211,7 @@ class PaymeService:
         return self.build_response(error=error, request_id=request_id)
 
     def check_perform_transaction_response(
-        self,
-        allow: bool = True,
-        request_id: Any = None
+            self, allow: bool = True, request_id: Any = None
     ) -> Dict[str, Any]:
         """Build CheckPerformTransaction response.
 
@@ -248,17 +222,10 @@ class PaymeService:
         Returns:
             CheckPerformTransaction response
         """
-        return self.success_response(
-            result={"allow": allow},
-            request_id=request_id
-        )
+        return self.success_response(result={"allow": allow}, request_id=request_id)
 
     def create_transaction_response(
-        self,
-        create_time: int,
-        transaction: str,
-        state: int = 1,
-        request_id: Any = None
+            self, create_time: int, transaction: str, state: int = 1, request_id: Any = None
     ) -> Dict[str, Any]:
         """Build CreateTransaction response.
 
@@ -272,20 +239,12 @@ class PaymeService:
             CreateTransaction response
         """
         return self.success_response(
-            result={
-                "create_time": create_time,
-                "transaction": transaction,
-                "state": state
-            },
-            request_id=request_id
+            result={"create_time": create_time, "transaction": transaction, "state": state},
+            request_id=request_id,
         )
 
     def perform_transaction_response(
-        self,
-        transaction: str,
-        perform_time: int,
-        state: int = 2,
-        request_id: Any = None
+            self, transaction: str, perform_time: int, state: int = 2, request_id: Any = None
     ) -> Dict[str, Any]:
         """Build PerformTransaction response.
 
@@ -299,20 +258,12 @@ class PaymeService:
             PerformTransaction response
         """
         return self.success_response(
-            result={
-                "transaction": transaction,
-                "perform_time": perform_time,
-                "state": state
-            },
-            request_id=request_id
+            result={"transaction": transaction, "perform_time": perform_time, "state": state},
+            request_id=request_id,
         )
 
     def cancel_transaction_response(
-        self,
-        transaction: str,
-        cancel_time: int,
-        state: int,
-        request_id: Any = None
+            self, transaction: str, cancel_time: int, state: int, request_id: Any = None
     ) -> Dict[str, Any]:
         """Build CancelTransaction response.
 
@@ -326,23 +277,19 @@ class PaymeService:
             CancelTransaction response
         """
         return self.success_response(
-            result={
-                "transaction": transaction,
-                "cancel_time": cancel_time,
-                "state": state
-            },
-            request_id=request_id
+            result={"transaction": transaction, "cancel_time": cancel_time, "state": state},
+            request_id=request_id,
         )
 
     def check_transaction_response(
-        self,
-        create_time: int,
-        perform_time: int,
-        cancel_time: int,
-        transaction: str,
-        state: int,
-        reason: Optional[int] = None,
-        request_id: Any = None
+            self,
+            create_time: int,
+            perform_time: int,
+            cancel_time: int,
+            transaction: str,
+            state: int,
+            reason: Optional[int] = None,
+            request_id: Any = None,
     ) -> Dict[str, Any]:
         """Build CheckTransaction response.
 
@@ -365,16 +312,12 @@ class PaymeService:
                 "cancel_time": cancel_time,
                 "transaction": transaction,
                 "state": state,
-                "reason": reason
+                "reason": reason,
             },
-            request_id=request_id
+            request_id=request_id,
         )
 
-    def get_statement_response(
-        self,
-        transactions: list,
-        request_id: Any = None
-    ) -> Dict[str, Any]:
+    def get_statement_response(self, transactions: list, request_id: Any = None) -> Dict[str, Any]:
         """Build GetStatement response.
 
         Args:
@@ -384,10 +327,7 @@ class PaymeService:
         Returns:
             GetStatement response
         """
-        return self.success_response(
-            result={"transactions": transactions},
-            request_id=request_id
-        )
+        return self.success_response(result={"transactions": transactions}, request_id=request_id)
 
     @staticmethod
     def timestamp_ms() -> int:

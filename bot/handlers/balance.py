@@ -1,8 +1,9 @@
 """Balance and wallet handlers for showing user balance and transaction history."""
 
-from aiogram import Router, F
-from aiogram.types import Message
 import logging
+
+from aiogram import F, Router
+from aiogram.types import Message
 
 from services.wallet_service import WalletService
 
@@ -30,9 +31,7 @@ async def show_balance(message: Message, user, wallet):
 
     except Exception as e:
         logger.error(f"Error showing balance for user {user.id}: {e}")
-        await message.answer(
-            "❌ Error loading balance information. Please try again later."
-        )
+        await message.answer("❌ Error loading balance information. Please try again later.")
 
 
 @router.message(F.text.in_(["/history", "📊 History", "📊 Transaction History"]))
@@ -77,10 +76,6 @@ async def show_transaction_history(message: Message, user):
 
     except Exception as e:
         logger.error(f"Error showing history for user {user.id}: {e}")
-        await message.answer(
-            "❌ Error loading transaction history. Please try again later."
-        )
-
+        await message.answer("❌ Error loading transaction history. Please try again later.")
 
 # Topup handler removed - now handled in payment.py with Click and Payme integration
-

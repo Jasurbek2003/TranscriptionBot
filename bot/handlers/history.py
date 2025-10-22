@@ -5,9 +5,10 @@ This module uses SQLAlchemy-style queries that need to be converted to Django OR
 The router is commented out in main.py until the migration is complete.
 """
 
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
 import logging
+
+from aiogram import F, Router
+from aiogram.types import CallbackQuery, Message
 
 from bot.keyboards.inline_keyboards import get_pagination_keyboard
 from django_admin.apps.transcriptions.models import Transcription
@@ -24,20 +25,14 @@ async def show_history(message: Message, session: AsyncSession, user):
 
 
 async def show_transcription_history(
-        message: Message,
-        session: AsyncSession,
-        user,
-        page: int = 1,
-        edit: bool = False
+        message: Message, session: AsyncSession, user, page: int = 1, edit: bool = False
 ):
     """Show paginated transcription history"""
     per_page = 5
     offset = (page - 1) * per_page
 
     # Get total count
-    count_stmt = select(func.count(Transcription.id)).where(
-        Transcription.user_id == user.id
-    )
+    count_stmt = select(func.count(Transcription.id)).where(Transcription.user_id == user.id)
     total_count = await session.scalar(count_stmt)
 
     if total_count == 0:
@@ -49,11 +44,13 @@ async def show_transcription_history(
         return
 
     # Get transcriptions
-    stmt = select(Transcription).where(
-        Transcription.user_id == user.id
-    ).order_by(
-        desc(Transcription.created_at)
-    ).limit(per_page).offset(offset)
+    stmt = (
+        select(Transcription)
+        .where(Transcription.user_id == user.id)
+        .order_by(desc(Transcription.created_at))
+        .limit(per_page)
+        .offset(offset)
+    )
 
     result = await session.execute(stmt)
     transcriptions = result.scalars().all()
@@ -79,22 +76,16 @@ async def show_transcription_history(
     # Send or edit message
     if edit:
         await message.edit_text(
-            text,
-            reply_markup=get_pagination_keyboard(page, total_pages, "trans_history")
+            text, reply_markup=get_pagination_keyboard(page, total_pages, "trans_history")
         )
     else:
         await message.answer(
-            text,
-            reply_markup=get_pagination_keyboard(page, total_pages, "trans_history")
+            text, reply_markup=get_pagination_keyboard(page, total_pages, "trans_history")
         )
 
 
 @router.callback_query(F.data.startswith("trans_history:page:"))
-async def history_pagination(
-        callback: CallbackQuery,
-        session: AsyncSession,
-        user
-):
+async def history_pagination(callback: CallbackQuery, session: AsyncSession, user):
     """Handle transcription history pagination"""
     page_str = callback.data.split(":")[2]
 
@@ -103,11 +94,5 @@ async def history_pagination(
         return
 
     page = int(page_str)
-    await show_transcription_history(
-        callback.message,
-        session,
-        user,
-        page=page,
-        edit=True
-    )
+    await show_transcription_history(callback.message, session, user, page=page, edit=True)
     await callback.answer()

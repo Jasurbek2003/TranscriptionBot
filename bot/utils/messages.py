@@ -38,7 +38,7 @@ def get_welcome_message(user_name: str, balance: float, language: str = "en") ->
             f"2. Transkripsiyani kuting\n"
             f"3. Matn faylini yuklab oling\n\n"
             f"Qo'shimcha ma'lumot uchun /help buyrug'idan foydalaning."
-        )
+        ),
     }
 
     return messages.get(language, messages["en"])
@@ -117,7 +117,7 @@ def get_help_message(language: str = "en") -> str:
             "/settings - Bot sozlamalari\n\n"
             "<b>Qo'llab-quvvatlash:</b>\n"
             "Savollar bo'lsa @support ga murojaat qiling"
-        )
+        ),
     }
 
     return messages.get(language, messages["en"])

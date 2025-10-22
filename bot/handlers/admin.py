@@ -5,23 +5,21 @@ This module uses SQLAlchemy-style queries that need to be converted to Django OR
 The router is commented out in main.py until the migration is complete.
 """
 
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
-from aiogram.fsm.context import FSMContext
-from aiogram.filters import Command
+import logging
 from datetime import datetime, timedelta
 from decimal import Decimal
-import logging
-from asgiref.sync import sync_to_async
-from django.db.models import Count, Sum, Q
-from django.db.models.functions import TruncDate
 
-from bot.filters import AdminFilter, SuperAdminFilter
-from bot.states import AdminStates
-from bot.keyboards.inline_keyboards import get_admin_keyboard
-from bot.keyboards.main_menu import get_cancel_keyboard
+from aiogram import F, Router
+from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message
+
 from bot.config import settings
 from bot.django_setup import TelegramUser, Transaction, Transcription
+from bot.filters import AdminFilter, SuperAdminFilter
+from bot.keyboards.inline_keyboards import get_admin_keyboard
+from bot.keyboards.main_menu import get_cancel_keyboard
+from bot.states import AdminStates
 from services.wallet_service import WalletService
 
 logger = logging.getLogger(__name__)
@@ -33,60 +31,53 @@ router = Router()
 async def admin_panel(message: Message):
     """Show admin panel"""
     await message.answer(
-        "👨‍💼 <b>Admin Panel</b>\n\n"
-        "Welcome to the admin control center.\n"
-        "Select an action:",
-        reply_markup=get_admin_keyboard()
+        "👨‍💼 <b>Admin Panel</b>\n\n" "Welcome to the admin control center.\n" "Select an action:",
+        reply_markup=get_admin_keyboard(),
     )
 
 
 @router.callback_query(F.data == "admin:stats", AdminFilter())
-async def admin_stats(callback: CallbackQuery, session: AsyncSession):
-    """Show bot statistics"""
+async def admin_stats(callback: CallbackQuery, session: AsyncSession):  # noqa: F821
+    """Show bot statistics - DISABLED: Needs Django ORM migration"""
     # Get statistics
     today = datetime.now().date()
     week_ago = today - timedelta(days=7)
     month_ago = today - timedelta(days=30)
 
     # User stats
-    total_users = await session.scalar(
-        select(func.count(TelegramUser.id))
-    )
+    total_users = await session.scalar(select(func.count(TelegramUser.id)))
     new_users_today = await session.scalar(
-        select(func.count(TelegramUser.id)).where(
-            func.date(TelegramUser.created_at) == today
-        )
+        select(func.count(TelegramUser.id)).where(func.date(TelegramUser.created_at) == today)
     )
     new_users_week = await session.scalar(
-        select(func.count(TelegramUser.id)).where(
-            func.date(TelegramUser.created_at) >= week_ago
-        )
+        select(func.count(TelegramUser.id)).where(func.date(TelegramUser.created_at) >= week_ago)
     )
 
     # Transaction stats
-    total_revenue = await session.scalar(
-        select(func.sum(Transaction.amount)).where(
-            Transaction.type == "debit",
-            Transaction.status == "completed"
-        )
-    ) or 0
+    total_revenue = (
+            await session.scalar(
+                select(func.sum(Transaction.amount)).where(
+                    Transaction.type == "debit", Transaction.status == "completed"
+                )
+            )
+            or 0
+    )
 
-    revenue_today = await session.scalar(
-        select(func.sum(Transaction.amount)).where(
-            Transaction.type == "debit",
-            Transaction.status == "completed",
-            func.date(Transaction.created_at) == today
-        )
-    ) or 0
+    revenue_today = (
+            await session.scalar(
+                select(func.sum(Transaction.amount)).where(
+                    Transaction.type == "debit",
+                    Transaction.status == "completed",
+                    func.date(Transaction.created_at) == today,
+                )
+            )
+            or 0
+    )
 
     # Transcription stats
-    total_transcriptions = await session.scalar(
-        select(func.count(Transcription.id))
-    )
+    total_transcriptions = await session.scalar(select(func.count(Transcription.id)))
     transcriptions_today = await session.scalar(
-        select(func.count(Transcription.id)).where(
-            func.date(Transcription.created_at) == today
-        )
+        select(func.count(Transcription.id)).where(func.date(Transcription.created_at) == today)
     )
 
     text = (
@@ -112,38 +103,26 @@ async def admin_users(callback: CallbackQuery, state: FSMContext):
     """User management"""
     await state.set_state(AdminStates.searching_user)
     await callback.message.edit_text(
-        "👥 <b>User Management</b>\n\n"
-        "Send user's Telegram ID or @username to search:"
+        "👥 <b>User Management</b>\n\n" "Send user's Telegram ID or @username to search:"
     )
-    await callback.message.answer(
-        "Enter user ID or username:",
-        reply_markup=get_cancel_keyboard()
-    )
+    await callback.message.answer("Enter user ID or username:", reply_markup=get_cancel_keyboard())
     await callback.answer()
 
 
 @router.message(AdminStates.searching_user, AdminFilter())
-async def search_user(
-        message: Message,
-        state: FSMContext,
-        session: AsyncSession
-):
+async def search_user(message: Message, state: FSMContext, session: AsyncSession):
     """Search for user"""
     search_query = message.text.strip()
 
     if search_query.startswith("@"):
         # Search by username
         username = search_query[1:]
-        stmt = select(TelegramUser).where(
-            TelegramUser.telegram_username == username
-        )
+        stmt = select(TelegramUser).where(TelegramUser.telegram_username == username)
     else:
         try:
             # Search by ID
             user_id = int(search_query)
-            stmt = select(TelegramUser).where(
-                TelegramUser.telegram_id == user_id
-            )
+            stmt = select(TelegramUser).where(TelegramUser.telegram_id == user_id)
         except ValueError:
             await message.answer("❌ Invalid user ID or username")
             return
@@ -160,17 +139,17 @@ async def search_user(
 
     # Get user statistics
     trans_count = await session.scalar(
-        select(func.count(Transcription.id)).where(
-            Transcription.user_id == user.id
-        )
+        select(func.count(Transcription.id)).where(Transcription.user_id == user.id)
     )
 
-    total_spent = await session.scalar(
-        select(func.sum(Transaction.amount)).where(
-            Transaction.user_id == user.id,
-            Transaction.type == "debit"
-        )
-    ) or 0
+    total_spent = (
+            await session.scalar(
+                select(func.sum(Transaction.amount)).where(
+                    Transaction.user_id == user.id, Transaction.type == "debit"
+                )
+            )
+            or 0
+    )
 
     text = (
         f"👤 <b>User Information</b>\n\n"
@@ -196,22 +175,14 @@ async def admin_broadcast(callback: CallbackQuery, state: FSMContext):
     """Start broadcast"""
     await state.set_state(AdminStates.entering_broadcast_message)
     await callback.message.edit_text(
-        "📢 <b>Broadcast Message</b>\n\n"
-        "Send the message you want to broadcast to all users:"
+        "📢 <b>Broadcast Message</b>\n\n" "Send the message you want to broadcast to all users:"
     )
-    await callback.message.answer(
-        "Enter broadcast message:",
-        reply_markup=get_cancel_keyboard()
-    )
+    await callback.message.answer("Enter broadcast message:", reply_markup=get_cancel_keyboard())
     await callback.answer()
 
 
 @router.message(AdminStates.entering_broadcast_message, SuperAdminFilter())
-async def broadcast_message(
-        message: Message,
-        state: FSMContext,
-        session: AsyncSession
-):
+async def broadcast_message(message: Message, state: FSMContext, session: AsyncSession):
     """Send broadcast to all users"""
     broadcast_text = message.text
 
@@ -224,17 +195,11 @@ async def broadcast_message(
     success = 0
     failed = 0
 
-    status_msg = await message.answer(
-        f"📤 Sending broadcast...\n"
-        f"Progress: 0/{len(user_ids)}"
-    )
+    status_msg = await message.answer(f"📤 Sending broadcast...\n" f"Progress: 0/{len(user_ids)}")
 
     for i, user_id in enumerate(user_ids):
         try:
-            await message.bot.send_message(
-                chat_id=user_id,
-                text=broadcast_text
-            )
+            await message.bot.send_message(chat_id=user_id, text=broadcast_text)
             success += 1
         except Exception as e:
             logger.error(f"Failed to send broadcast to {user_id}: {e}")
@@ -325,7 +290,7 @@ async def admin_topup_user(message: Message, user, session: AsyncSession):
             user=target_user,
             amount=amount,
             description=f"Admin top-up: {description}",
-            reference_id=f"admin_topup_{message.message_id}"
+            reference_id=f"admin_topup_{message.message_id}",
         )
 
         if result.success:
@@ -350,7 +315,7 @@ async def admin_topup_user(message: Message, user, session: AsyncSession):
                          f"💰 <b>Added:</b> +{amount:,.2f} UZS\n"
                          f"💳 <b>New Balance:</b> {result.balance_after:,.2f} UZS\n"
                          f"📝 <b>Reason:</b> {description}\n\n"
-                         f"Thank you! You can now use the transcription service."
+                         f"Thank you! You can now use the transcription service.",
                 )
                 logger.info(f"Notified user {target_user_id} about balance top-up")
             except Exception as e:
@@ -413,7 +378,6 @@ async def admin_check_user(message: Message, user, session: AsyncSession):
             f"🌍 <b>Language:</b> {target_user.language_code}\n"
             f"📅 <b>Joined:</b> {target_user.created_at.strftime('%Y-%m-%d %H:%M')}\n"
             f"⏰ <b>Last Active:</b> {target_user.last_activity.strftime('%Y-%m-%d %H:%M') if target_user.last_activity else 'Never'}\n\n"
-
             f"💰 <b>Wallet Information</b>\n"
             f"💳 <b>Balance:</b> {balance_info.current_balance:,.2f} UZS\n"
             f"📈 <b>Total Added:</b> {balance_info.total_credited:,.2f} UZS\n"
@@ -445,24 +409,19 @@ async def admin_help(message: Message, user):
 
     help_text = (
         f"🔧 <b>Admin Commands</b>\n\n"
-
         f"💰 <b>Balance Management:</b>\n"
         f"• <code>/topup_user &lt;user_id&gt; &lt;amount&gt; [description]</code>\n"
         f"   Add balance to user's wallet\n\n"
-
         f"👤 <b>User Management:</b>\n"
         f"• <code>/check_user &lt;user_id&gt;</code>\n"
         f"   View user information and balance\n\n"
-
         f"ℹ️ <b>Help:</b>\n"
         f"• <code>/admin_help</code>\n"
         f"   Show this help message\n\n"
-
         f"📋 <b>Examples:</b>\n"
         f"• <code>/topup_user 123456789 1000</code>\n"
         f"• <code>/topup_user 123456789 500 Welcome bonus</code>\n"
         f"• <code>/check_user 123456789</code>\n\n"
-
         f"👑 <b>Your admin ID:</b> {user.telegram_id}"
     )
 

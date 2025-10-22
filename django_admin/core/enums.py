@@ -5,6 +5,7 @@ from enum import Enum
 
 class TransactionType(str, Enum):
     """Transaction type enumeration."""
+
     CREDIT = "credit"
     DEBIT = "debit"
     BONUS = "bonus"
@@ -13,6 +14,7 @@ class TransactionType(str, Enum):
 
 class TransactionStatus(str, Enum):
     """Transaction status enumeration."""
+
     PENDING = "pending"
     COMPLETED = "completed"
     FAILED = "failed"
@@ -21,6 +23,7 @@ class TransactionStatus(str, Enum):
 
 class PaymentMethod(str, Enum):
     """Payment method enumeration."""
+
     PAYME = "payme"
     CLICK = "click"
     CASH = "cash"
@@ -30,6 +33,7 @@ class PaymentMethod(str, Enum):
 
 class TranscriptionStatus(str, Enum):
     """Transcription status enumeration."""
+
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
@@ -38,6 +42,7 @@ class TranscriptionStatus(str, Enum):
 
 class MediaType(str, Enum):
     """Media type enumeration."""
+
     AUDIO = "audio"
     VIDEO = "video"
     VIDEO_NOTE = "video_note"
@@ -45,6 +50,7 @@ class MediaType(str, Enum):
 
 class QualityLevel(str, Enum):
     """Transcription quality level enumeration."""
+
     NORMAL = "normal"
     HIGH = "high"
     PREMIUM = "premium"

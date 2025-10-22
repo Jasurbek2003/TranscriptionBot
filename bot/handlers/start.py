@@ -1,15 +1,15 @@
 # bot/handlers/start.py
 
-from aiogram import Router, F
-from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, CallbackQuery
-from aiogram.fsm.context import FSMContext
-
-from bot.keyboards.main_menu import get_main_menu
-from bot.keyboards.inline_keyboards import get_settings_keyboard, get_language_keyboard
-from bot.config import settings
-from bot.utils.messages import get_welcome_message, get_help_message
 import logging
+
+from aiogram import F, Router
+from aiogram.filters import Command, CommandStart
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message
+
+from bot.config import settings
+from bot.keyboards.inline_keyboards import get_settings_keyboard
+from bot.utils.messages import get_help_message
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +26,11 @@ async def cmd_start(message: Message, state: FSMContext):
     is_admin = message.from_user.id in settings.admin_ids
 
     # Send simple welcome message
-    welcome_text = f"👋 Welcome to TranscriptionBot, {message.from_user.first_name}!\n\n" \
-                   f"🎵 Send me audio or video files and I'll transcribe them for you.\n\n" \
-                   f"Use /help to see available commands."
+    welcome_text = (
+        f"👋 Welcome to TranscriptionBot, {message.from_user.first_name}!\n\n"
+        f"🎵 Send me audio or video files and I'll transcribe them for you.\n\n"
+        f"Use /help to see available commands."
+    )
 
     await message.answer(text=welcome_text)
 
@@ -86,7 +88,7 @@ async def settings_button(message: Message):
     """Handle settings button"""
     await message.answer(
         "⚙️ <b>Settings</b>\n\nChoose what you want to configure:",
-        reply_markup=get_settings_keyboard()
+        reply_markup=get_settings_keyboard(),
     )
 
 
@@ -104,15 +106,36 @@ async def settings_button(message: Message):
 @router.callback_query(F.data == "settings:notifications")
 async def settings_notifications(callback: CallbackQuery):
     """Handle notification settings"""
-    # TODO: Implement notification settings
-    await callback.answer("Notification settings coming soon!", show_alert=True)
+    # Future enhancement: Allow users to configure:
+    # - Completion notifications (when transcription is done)
+    # - Payment notifications (successful/failed payments)
+    # - Balance low warnings
+    # - Promotional messages
+    await callback.answer(
+        "Notification settings will be available in a future update!\n\n"
+        "Currently, you receive notifications for:\n"
+        "• Completed transcriptions\n"
+        "• Payment confirmations",
+        show_alert=True,
+    )
 
 
 @router.callback_query(F.data == "settings:transcription")
 async def settings_transcription(callback: CallbackQuery):
     """Handle transcription settings"""
-    # TODO: Implement transcription settings
-    await callback.answer("Transcription settings coming soon!", show_alert=True)
+    # Future enhancement: Allow users to configure:
+    # - Default quality level (fast/normal/high)
+    # - Preferred language for transcription
+    # - Auto-translate options
+    # - Output format preferences
+    await callback.answer(
+        "Transcription settings will be available in a future update!\n\n"
+        "Currently, all transcriptions use:\n"
+        "• Normal quality (balanced speed & accuracy)\n"
+        "• Auto-detected language\n"
+        "• Plain text format",
+        show_alert=True,
+    )
 
 
 @router.callback_query(F.data == "settings:back")
@@ -290,7 +313,7 @@ async def handle_video_note(message: Message):
 async def handle_document(message: Message):
     """Handle document files"""
     doc = message.document
-    if doc.mime_type and ('audio' in doc.mime_type or 'video' in doc.mime_type):
+    if doc.mime_type and ("audio" in doc.mime_type or "video" in doc.mime_type):
         await message.answer(
             "📎 <b>Media Document Detected!</b>\n\n"
             f"📁 <b>File:</b> {doc.file_name}\n"
@@ -354,7 +377,7 @@ async def cmd_support(message: Message):
     )
 
 
-@router.message(F.text.startswith('/'))
+@router.message(F.text.startswith("/"))
 async def handle_unknown_command(message: Message):
     """Handle unknown commands"""
     command = message.text.split()[0]

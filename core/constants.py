@@ -7,17 +7,29 @@ DEFAULT_PAGE_SIZE: Final[int] = 20
 MAX_PAGE_SIZE: Final[int] = 100
 
 # File Constants
-ALLOWED_AUDIO_EXTENSIONS: Final[set] = {'.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.wma'}
-ALLOWED_VIDEO_EXTENSIONS: Final[set] = {'.mp4', '.avi', '.mov', '.mkv', '.webm', '.flv', '.wmv'}
-ALLOWED_DOCUMENT_EXTENSIONS: Final[set] = {'.txt', '.pdf', '.doc', '.docx'}
+ALLOWED_AUDIO_EXTENSIONS: Final[set] = {".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac", ".wma"}
+ALLOWED_VIDEO_EXTENSIONS: Final[set] = {".mp4", ".avi", ".mov", ".mkv", ".webm", ".flv", ".wmv"}
+ALLOWED_DOCUMENT_EXTENSIONS: Final[set] = {".txt", ".pdf", ".doc", ".docx"}
 
 AUDIO_MIME_TYPES: Final[set] = {
-    'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/ogg',
-    'audio/mp4', 'audio/aac', 'audio/flac', 'audio/x-ms-wma'
+    "audio/mpeg",
+    "audio/mp3",
+    "audio/wav",
+    "audio/x-wav",
+    "audio/ogg",
+    "audio/mp4",
+    "audio/aac",
+    "audio/flac",
+    "audio/x-ms-wma",
 }
 VIDEO_MIME_TYPES: Final[set] = {
-    'video/mp4', 'video/x-msvideo', 'video/quicktime', 'video/x-matroska',
-    'video/webm', 'video/x-flv', 'video/x-ms-wmv'
+    "video/mp4",
+    "video/x-msvideo",
+    "video/quicktime",
+    "video/x-matroska",
+    "video/webm",
+    "video/x-flv",
+    "video/x-ms-wmv",
 }
 
 # Size Limits (in bytes)

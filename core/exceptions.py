@@ -1,14 +1,11 @@
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 
 class BaseError(Exception):
     """Base exception class for the application"""
 
     def __init__(
-            self,
-            message: str,
-            code: Optional[str] = None,
-            details: Optional[Dict[str, Any]] = None
+            self, message: str, code: Optional[str] = None, details: Optional[Dict[str, Any]] = None
     ):
         self.message = message
         self.code = code or self.__class__.__name__
@@ -17,16 +14,13 @@ class BaseError(Exception):
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert exception to dictionary"""
-        return {
-            "error": self.code,
-            "message": self.message,
-            "details": self.details
-        }
+        return {"error": self.code, "message": self.message, "details": self.details}
 
 
 # Database Exceptions
 class DatabaseError(BaseError):
     """Base database exception"""
+
     pass
 
 
@@ -37,7 +31,7 @@ class RecordNotFoundError(DatabaseError):
         super().__init__(
             message=f"{model} with id {id_} not found",
             code="RECORD_NOT_FOUND",
-            details={"model": model, "id": id_}
+            details={"model": model, "id": id_},
         )
 
 
@@ -48,7 +42,7 @@ class DuplicateRecordError(DatabaseError):
         super().__init__(
             message=f"{model} with {field}={value} already exists",
             code="DUPLICATE_RECORD",
-            details={"model": model, "field": field, "value": value}
+            details={"model": model, "field": field, "value": value},
         )
 
 
@@ -57,14 +51,14 @@ class DatabaseConnectionError(DatabaseError):
 
     def __init__(self, details: str = ""):
         super().__init__(
-            message=f"Failed to connect to database: {details}",
-            code="DATABASE_CONNECTION_ERROR"
+            message=f"Failed to connect to database: {details}", code="DATABASE_CONNECTION_ERROR"
         )
 
 
 # Payment Exceptions
 class PaymentError(BaseError):
     """Base payment exception"""
+
     pass
 
 
@@ -75,7 +69,7 @@ class InsufficientBalanceError(PaymentError):
         super().__init__(
             message=f"Insufficient balance. Required: {required}, Available: {available}",
             code="INSUFFICIENT_BALANCE",
-            details={"required": required, "available": available}
+            details={"required": required, "available": available},
         )
 
 
@@ -86,7 +80,7 @@ class PaymentProviderError(PaymentError):
         super().__init__(
             message=f"Payment provider error: {error}",
             code="PAYMENT_PROVIDER_ERROR",
-            details={"provider": provider, "error": error}
+            details={"provider": provider, "error": error},
         )
 
 
@@ -97,7 +91,7 @@ class TransactionError(PaymentError):
         super().__init__(
             message=f"Transaction {transaction_id} failed: {error}",
             code="TRANSACTION_ERROR",
-            details={"transaction_id": transaction_id, "error": error}
+            details={"transaction_id": transaction_id, "error": error},
         )
 
 
@@ -112,15 +106,14 @@ class InvalidAmountError(PaymentError):
             details["max_amount"] = max_amount
 
         super().__init__(
-            message=f"Invalid amount: {amount}",
-            code="INVALID_AMOUNT",
-            details=details
+            message=f"Invalid amount: {amount}", code="INVALID_AMOUNT", details=details
         )
 
 
 # Transcription Exceptions
 class TranscriptionError(BaseError):
     """Base transcription exception"""
+
     pass
 
 
@@ -131,7 +124,7 @@ class MediaProcessingError(TranscriptionError):
         super().__init__(
             message=f"Failed to process {file_type}: {error}",
             code="MEDIA_PROCESSING_ERROR",
-            details={"file_type": file_type, "error": error}
+            details={"file_type": file_type, "error": error},
         )
 
 
@@ -142,7 +135,7 @@ class TranscriptionServiceError(TranscriptionError):
         super().__init__(
             message=f"Transcription service error: {error}",
             code="TRANSCRIPTION_SERVICE_ERROR",
-            details={"service": service, "error": error}
+            details={"service": service, "error": error},
         )
 
 
@@ -153,7 +146,7 @@ class FileSizeError(TranscriptionError):
         super().__init__(
             message=f"File size {size} exceeds maximum {max_size}",
             code="FILE_SIZE_ERROR",
-            details={"size": size, "max_size": max_size}
+            details={"size": size, "max_size": max_size},
         )
 
 
@@ -164,13 +157,14 @@ class DurationError(TranscriptionError):
         super().__init__(
             message=f"Duration {duration}s exceeds maximum {max_duration}s",
             code="DURATION_ERROR",
-            details={"duration": duration, "max_duration": max_duration}
+            details={"duration": duration, "max_duration": max_duration},
         )
 
 
 # Notification Exceptions
 class NotificationError(BaseError):
     """Base notification exception"""
+
     pass
 
 
@@ -181,7 +175,7 @@ class MessageSendError(NotificationError):
         super().__init__(
             message=f"Failed to send message to user {user_id}: {error}",
             code="MESSAGE_SEND_ERROR",
-            details={"user_id": user_id, "error": error}
+            details={"user_id": user_id, "error": error},
         )
 
 
@@ -192,13 +186,14 @@ class UserBlockedBotError(NotificationError):
         super().__init__(
             message=f"User {user_id} has blocked the bot",
             code="USER_BLOCKED_BOT",
-            details={"user_id": user_id}
+            details={"user_id": user_id},
         )
 
 
 # Authentication Exceptions
 class AuthenticationError(BaseError):
     """Base authentication exception"""
+
     pass
 
 
@@ -206,10 +201,7 @@ class UnauthorizedError(AuthenticationError):
     """Unauthorized access"""
 
     def __init__(self, message: str = "Unauthorized access"):
-        super().__init__(
-            message=message,
-            code="UNAUTHORIZED"
-        )
+        super().__init__(message=message, code="UNAUTHORIZED")
 
 
 class TokenError(AuthenticationError):
@@ -217,15 +209,14 @@ class TokenError(AuthenticationError):
 
     def __init__(self, error: str):
         super().__init__(
-            message=f"Token error: {error}",
-            code="TOKEN_ERROR",
-            details={"error": error}
+            message=f"Token error: {error}", code="TOKEN_ERROR", details={"error": error}
         )
 
 
 # Validation Exceptions
 class ValidationError(BaseError):
     """Base validation exception"""
+
     pass
 
 
@@ -236,7 +227,7 @@ class InvalidInputError(ValidationError):
         super().__init__(
             message=f"Invalid {field}: expected {expected}, got {value}",
             code="INVALID_INPUT",
-            details={"field": field, "value": value, "expected": expected}
+            details={"field": field, "value": value, "expected": expected},
         )
 
 
@@ -247,13 +238,14 @@ class MissingFieldError(ValidationError):
         super().__init__(
             message=f"Required field missing: {field}",
             code="MISSING_FIELD",
-            details={"field": field}
+            details={"field": field},
         )
 
 
 # Service Exceptions
 class ServiceError(BaseError):
     """Base service exception"""
+
     pass
 
 
@@ -264,7 +256,7 @@ class ExternalAPIError(ServiceError):
         super().__init__(
             message=f"External API error from {service}: {error}",
             code="EXTERNAL_API_ERROR",
-            details={"service": service, "status_code": status_code, "error": error}
+            details={"service": service, "status_code": status_code, "error": error},
         )
 
 
@@ -279,7 +271,7 @@ class RateLimitError(ServiceError):
         super().__init__(
             message=f"Rate limit exceeded: {limit} requests per {window} seconds",
             code="RATE_LIMIT_ERROR",
-            details=details
+            details=details,
         )
 
 
@@ -287,15 +279,13 @@ class MaintenanceError(ServiceError):
     """Service is under maintenance"""
 
     def __init__(self, message: str = "Service is under maintenance"):
-        super().__init__(
-            message=message,
-            code="MAINTENANCE_MODE"
-        )
+        super().__init__(message=message, code="MAINTENANCE_MODE")
 
 
 # Business Logic Exceptions
 class BusinessLogicError(BaseError):
     """Base business logic exception"""
+
     pass
 
 
@@ -306,7 +296,7 @@ class OperationNotAllowedError(BusinessLogicError):
         super().__init__(
             message=f"Operation '{operation}' not allowed: {reason}",
             code="OPERATION_NOT_ALLOWED",
-            details={"operation": operation, "reason": reason}
+            details={"operation": operation, "reason": reason},
         )
 
 
@@ -317,5 +307,5 @@ class StateError(BusinessLogicError):
         super().__init__(
             message=f"Invalid state: current={current_state}, expected={expected_state}",
             code="INVALID_STATE",
-            details={"current_state": current_state, "expected_state": expected_state}
+            details={"current_state": current_state, "expected_state": expected_state},
         )

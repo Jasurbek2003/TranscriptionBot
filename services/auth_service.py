@@ -1,21 +1,24 @@
 """Authentication service for one-time tokens using Django ORM"""
 
+import os
 import secrets
+# Import Django models
+import sys
 from datetime import timedelta
 from typing import Optional
+
 from asgiref.sync import sync_to_async
 from django.utils import timezone
 
-# Import Django models
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'django_admin'))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "django_admin"))
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.development")
 import django
+
 django.setup()
 
-from apps.users.models import TelegramUser
 from webapp.models import OneTimeToken
+
+from apps.users.models import TelegramUser
 
 
 class AuthService:
@@ -23,10 +26,7 @@ class AuthService:
 
     @sync_to_async
     def generate_token(
-        self,
-        user: TelegramUser,
-        purpose: str = "general_access",
-        expires_in_hours: int = 1
+            self, user: TelegramUser, purpose: str = "general_access", expires_in_hours: int = 1
     ) -> OneTimeToken:
         """
         Generate a new one-time token for a user
@@ -47,20 +47,14 @@ class AuthService:
 
         # Create token record
         token = OneTimeToken.objects.create(
-            user=user,
-            token=token_value,
-            purpose=purpose,
-            expires_at=expires_at
+            user=user, token=token_value, purpose=purpose, expires_at=expires_at
         )
 
         return token
 
     @sync_to_async
     def validate_token(
-        self,
-        token_value: str,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+            self, token_value: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None
     ) -> Optional[TelegramUser]:
         """
         Validate a one-time token and return the associated user
@@ -84,8 +78,8 @@ class AuthService:
             # Mark token as used
             token.is_used = True
             token.used_at = timezone.now()
-            token.ip_address = ip_address or ''
-            token.user_agent = user_agent or ''
+            token.ip_address = ip_address or ""
+            token.user_agent = user_agent or ""
             token.save()
 
             # Get and return user
@@ -119,16 +113,10 @@ class AuthService:
         Returns:
             Number of revoked tokens
         """
-        active_tokens = OneTimeToken.objects.filter(
-            user_id=user_id,
-            is_used=False
-        )
+        active_tokens = OneTimeToken.objects.filter(user_id=user_id, is_used=False)
         count = active_tokens.count()
 
         # Mark all as used
-        active_tokens.update(
-            is_used=True,
-            used_at=timezone.now()
-        )
+        active_tokens.update(is_used=True, used_at=timezone.now())
 
         return count

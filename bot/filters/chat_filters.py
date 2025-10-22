@@ -1,6 +1,7 @@
-from aiogram.filters import Filter
-from aiogram.types import Message, CallbackQuery
 from typing import Union
+
+from aiogram.filters import Filter
+from aiogram.types import CallbackQuery, Message
 
 
 class PrivateChatFilter(Filter):

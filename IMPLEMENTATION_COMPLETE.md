@@ -2,11 +2,13 @@
 
 ## Summary
 
-Successfully rewritten Click and Payme merchant services based on official documentation with the following improvements:
+Successfully rewritten Click and Payme merchant services based on official documentation with the following
+improvements:
 
 ### 1. Services Updated ✅
 
 #### Click Service (`services/payment/click_service.py`)
+
 - ✅ Added official error codes (-1 to -9)
 - ✅ **FIXED CRITICAL BUG**: Signature verification for Complete action now includes `merchant_prepare_id`
 - ✅ Added response builder methods (prepare_response, complete_response, error_response)
@@ -14,6 +16,7 @@ Successfully rewritten Click and Payme merchant services based on official docum
 - ✅ Removed unused async methods
 
 #### Payme Service (`services/payment/payme_service.py`)
+
 - ✅ Complete JSON-RPC 2.0 implementation
 - ✅ All official error codes and transaction states
 - ✅ Response builders for all 6 Merchant API methods
@@ -23,6 +26,7 @@ Successfully rewritten Click and Payme merchant services based on official docum
 ### 2. Webhook Handlers Updated ✅
 
 #### Click Webhooks - NOW SEPARATE ENDPOINTS
+
 - ✅ **`/api/transactions/webhooks/click/prepare/`** - Handles Prepare action (action=0)
 - ✅ **`/api/transactions/webhooks/click/complete/`** - Handles Complete action (action=1)
 - ✅ Fixed signature verification (different for Prepare vs Complete)
@@ -31,13 +35,14 @@ Successfully rewritten Click and Payme merchant services based on official docum
 - ✅ Transaction state validation
 
 #### Payme Webhook - SINGLE ENDPOINT (JSON-RPC)
+
 - ✅ **`/api/transactions/webhooks/payme/`** - Handles all 6 methods:
-  - CheckPerformTransaction
-  - CreateTransaction
-  - PerformTransaction
-  - CancelTransaction
-  - CheckTransaction
-  - GetStatement
+    - CheckPerformTransaction
+    - CreateTransaction
+    - PerformTransaction
+    - CancelTransaction
+    - CheckTransaction
+    - GetStatement
 - ✅ Proper Basic Auth verification
 - ✅ Complete idempotency support
 - ✅ Refund support (CancelTransaction after completion)
@@ -62,11 +67,13 @@ urlpatterns = [
 ### Click Signature Verification FIX
 
 **OLD (WRONG)** - Same signature for both Prepare and Complete:
+
 ```python
 MD5(click_trans_id + service_id + secret_key + merchant_trans_id + amount + action + sign_time)
 ```
 
 **NEW (CORRECT)** - Different signatures:
+
 - **Prepare (action=0)**:
   ```python
   MD5(click_trans_id + service_id + secret_key + merchant_trans_id + amount + action + sign_time)
@@ -80,9 +87,11 @@ MD5(click_trans_id + service_id + secret_key + merchant_trans_id + amount + acti
 ### Click Webhook URLs Changed
 
 **OLD**:
+
 - Single endpoint: `/api/transactions/webhooks/click/`
 
 **NEW**:
+
 - Prepare endpoint: `/api/transactions/webhooks/click/prepare/`
 - Complete endpoint: `/api/transactions/webhooks/click/complete/`
 
@@ -91,12 +100,14 @@ MD5(click_trans_id + service_id + secret_key + merchant_trans_id + amount + acti
 ### 1. Update Click Merchant Settings
 
 In your Click merchant dashboard, configure these webhook URLs:
+
 - **Prepare URL**: `https://yourdomain.com/api/transactions/webhooks/click/prepare/`
 - **Complete URL**: `https://yourdomain.com/api/transactions/webhooks/click/complete/`
 
 ### 2. Environment Variables
 
 Ensure `.env` has:
+
 ```env
 # Click credentials
 CLICK_MERCHANT_ID=your_merchant_id
@@ -112,6 +123,7 @@ PAYME_SECRET_KEY=your_secret_key
 ### 3. Django Settings
 
 Verify `django_admin/config/settings/base.py` has:
+
 ```python
 # Click Payment Gateway
 CLICK_MERCHANT_ID = env.str('CLICK_MERCHANT_ID')
@@ -139,6 +151,7 @@ PAYME_SECRET_KEY = env.str('PAYME_SECRET_KEY')
 ## Testing
 
 ### Test Click Prepare
+
 ```bash
 curl -X POST https://yourdomain.com/api/transactions/webhooks/click/prepare/ \
   -d "click_trans_id=123456" \
@@ -154,6 +167,7 @@ curl -X POST https://yourdomain.com/api/transactions/webhooks/click/prepare/ \
 ```
 
 ### Test Click Complete
+
 ```bash
 curl -X POST https://yourdomain.com/api/transactions/webhooks/click/complete/ \
   -d "click_trans_id=123456" \
@@ -170,6 +184,7 @@ curl -X POST https://yourdomain.com/api/transactions/webhooks/click/complete/ \
 ```
 
 ### Test Payme CheckPerformTransaction
+
 ```bash
 curl -X POST https://yourdomain.com/api/transactions/webhooks/payme/ \
   -H "Authorization: Basic $(echo -n 'Paycom:YOUR_SECRET_KEY' | base64)" \
@@ -193,6 +208,7 @@ curl -X POST https://yourdomain.com/api/transactions/webhooks/payme/ \
 Update `create_payment_link()` calls to remove `user_id` parameter:
 
 **OLD**:
+
 ```python
 payment_url = click_service.create_payment_link(
     amount=amount,
@@ -203,6 +219,7 @@ payment_url = click_service.create_payment_link(
 ```
 
 **NEW**:
+
 ```python
 payment_url = click_service.create_payment_link(
     amount=amount,
@@ -225,4 +242,5 @@ payment_url = click_service.create_payment_link(
 
 ## Status: ✅ COMPLETE
 
-All tasks completed successfully. The payment gateway integration has been rewritten according to official documentation.
+All tasks completed successfully. The payment gateway integration has been rewritten according to official
+documentation.

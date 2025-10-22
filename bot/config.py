@@ -1,13 +1,12 @@
 """Bot configuration settings and environment management."""
 
-import os
+from enum import Enum
 from pathlib import Path
 from typing import List, Optional, Union
-from enum import Enum
 
-from pydantic import Field, field_validator, computed_field
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
+from pydantic import Field, computed_field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Load environment variables
 load_dotenv()
@@ -21,6 +20,7 @@ MEDIA_DIR = BASE_DIR / "media"
 
 class LogLevel(str, Enum):
     """Logging levels enumeration."""
+
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
@@ -30,6 +30,7 @@ class LogLevel(str, Enum):
 
 class Language(str, Enum):
     """Supported languages enumeration."""
+
     ENGLISH = "en"
     RUSSIAN = "ru"
     UZBEK = "uz"
@@ -37,6 +38,7 @@ class Language(str, Enum):
 
 class Environment(str, Enum):
     """Application environment types."""
+
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
@@ -62,6 +64,7 @@ class DatabaseSettings(BaseSettings):
     Note: Database settings are now managed by Django.
     See django_admin/config/settings/base.py for database configuration.
     """
+
     pass
 
 
@@ -109,7 +112,7 @@ class PricingSettings(BaseSettings):
     @classmethod
     def validate_max_payment(cls, v: float, info) -> float:
         """Ensure max payment is greater than min payment."""
-        if hasattr(info.data, 'min_payment_amount') and v <= info.data['min_payment_amount']:
+        if hasattr(info.data, "min_payment_amount") and v <= info.data["min_payment_amount"]:
             raise ValueError("max_payment_amount must be greater than min_payment_amount")
         return v
 
@@ -119,6 +122,9 @@ class AISettings(BaseSettings):
 
     gemini_api_key: str = Field(alias="GEMINI_API_KEY")
     gemini_model: str = Field(default="gemini-2.5-flash", alias="GEMINI_MODEL")
+    gemini_max_output_tokens: int = Field(
+        default=8192, alias="GEMINI_MAX_OUTPUT_TOKENS", gt=0, le=8192
+    )
     max_audio_duration_seconds: int = Field(default=3600, alias="MAX_AUDIO_DURATION_SECONDS", gt=0)
     max_video_duration_seconds: int = Field(default=1800, alias="MAX_VIDEO_DURATION_SECONDS", gt=0)
     max_file_size_mb: int = Field(default=100, alias="MAX_FILE_SIZE_MB", gt=0)
@@ -165,7 +171,9 @@ class Settings(BaseSettings):
     bot_token: str = Field(alias="BOT_TOKEN")
     bot_username: Optional[str] = Field(default=None, alias="BOT_USERNAME")
     drop_pending_updates: bool = Field(default=False, alias="DROP_PENDING_UPDATES")
-    bot_api_server: Optional[str] = Field(default=None, alias="BOT_API_SERVER")  # Custom Bot API Server URL
+    bot_api_server: Optional[str] = Field(
+        default=None, alias="BOT_API_SERVER"
+    )  # Custom Bot API Server URL
 
     # Web app settings
     web_app_url: str = Field(default="http://127.0.0.1:8000", alias="WEB_APP_URL")
@@ -185,7 +193,7 @@ class Settings(BaseSettings):
     default_language: Language = Field(default=Language.ENGLISH, alias="DEFAULT_LANGUAGE")
     supported_languages: List[Language] = Field(
         default_factory=lambda: [Language.ENGLISH, Language.RUSSIAN, Language.UZBEK],
-        alias="SUPPORTED_LANGUAGES"
+        alias="SUPPORTED_LANGUAGES",
     )
 
     # Nested settings
@@ -200,8 +208,11 @@ class Settings(BaseSettings):
     @field_validator("admin_ids", mode="before")
     @classmethod
     def parse_admin_ids(cls, v: Union[str, List[int]]) -> List[int]:
-        print(v, type(v))
         """Parse admin IDs from string or list."""
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.debug(f"Parsing admin_ids: {v} (type: {type(v).__name__})")
         if isinstance(v, str):
             if not v.strip():
                 return []

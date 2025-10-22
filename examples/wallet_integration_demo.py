@@ -12,19 +12,20 @@ Usage:
 
 import os
 import sys
-import django
 from decimal import Decimal
+
+import django
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Setup Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_admin.config.settings.local')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "django_admin.config.settings.local")
 django.setup()
 
+from core.enums import PaymentMethod, TransactionType
 from django_admin.apps.users.models import User
 from services.payment.wallet_service import WalletService
-from core.enums import TransactionType, PaymentMethod
 
 
 def create_demo_user():
@@ -32,26 +33,28 @@ def create_demo_user():
     user, created = User.objects.get_or_create(
         telegram_id=123456789,
         defaults={
-            'username': 'demo_user',
-            'first_name': 'Demo',
-            'last_name': 'User',
-            'role': 'user'
-        }
+            "username": "demo_user",
+            "first_name": "Demo",
+            "last_name": "User",
+            "role": "user",
+        },
     )
 
     if created:
         print(f"✅ Created demo user: {user.first_name} {user.last_name} (ID: {user.telegram_id})")
     else:
-        print(f"📋 Using existing demo user: {user.first_name} {user.last_name} (ID: {user.telegram_id})")
+        print(
+            f"📋 Using existing demo user: {user.first_name} {user.last_name} (ID: {user.telegram_id})"
+        )
 
     return user
 
 
 def demonstrate_wallet_operations():
     """Demonstrate various wallet operations."""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🚀 WALLET & TRANSACTION INTEGRATION DEMO")
-    print("="*60)
+    print("=" * 60)
 
     # Create demo user
     user = create_demo_user()
@@ -75,11 +78,11 @@ def demonstrate_wallet_operations():
     print(f"\n3️⃣ Adding balance via PayMe payment...")
     add_result = WalletService.add_balance(
         user=user,
-        amount=Decimal('5000.00'),
+        amount=Decimal("5000.00"),
         description="PayMe deposit - Demo transaction",
         payment_method=PaymentMethod.PAYME,
         external_id="PAYME_123456",
-        metadata={"payment_gateway": "payme", "test_mode": True}
+        metadata={"payment_gateway": "payme", "test_mode": True},
     )
 
     if add_result.success:
@@ -94,12 +97,10 @@ def demonstrate_wallet_operations():
     duration_seconds = 180  # 3 minutes
     media_type = "audio"
     cost = WalletService.calculate_transcription_cost(
-        duration_seconds=duration_seconds,
-        media_type=media_type,
-        quality_level="normal"
+        duration_seconds=duration_seconds, media_type=media_type, quality_level="normal"
     )
     print(f"   🎵 Media Type: {media_type}")
-    print(f"   ⏱️ Duration: {duration_seconds} seconds ({duration_seconds//60} minutes)")
+    print(f"   ⏱️ Duration: {duration_seconds} seconds ({duration_seconds // 60} minutes)")
     print(f"   💸 Calculated Cost: {cost}")
 
     # 5. Check sufficient balance
@@ -119,8 +120,8 @@ def demonstrate_wallet_operations():
         metadata={
             "media_type": media_type,
             "duration_seconds": duration_seconds,
-            "quality_level": "normal"
-        }
+            "quality_level": "normal",
+        },
     )
 
     if deduct_result.success:
@@ -134,10 +135,10 @@ def demonstrate_wallet_operations():
     print(f"\n7️⃣ Adding bonus balance...")
     bonus_result = WalletService.add_balance(
         user=user,
-        amount=Decimal('500.00'),
+        amount=Decimal("500.00"),
         description="Welcome bonus for new users",
         payment_method=PaymentMethod.BONUS,
-        metadata={"bonus_type": "welcome", "promotion_id": "WELCOME2024"}
+        metadata={"bonus_type": "welcome", "promotion_id": "WELCOME2024"},
     )
 
     if bonus_result.success:
@@ -152,7 +153,7 @@ def demonstrate_wallet_operations():
         amount=cost / 2,  # Partial refund
         description="Partial refund for failed transcription",
         original_transaction_id=deduct_result.transaction_id,
-        metadata={"refund_type": "partial", "refund_reason": "processing_failed"}
+        metadata={"refund_type": "partial", "refund_reason": "processing_failed"},
     )
 
     if refund_result.success:
@@ -163,9 +164,7 @@ def demonstrate_wallet_operations():
     # 9. Set wallet limits
     print(f"\n9️⃣ Setting wallet spending limits...")
     limits_set = WalletService.set_wallet_limits(
-        user=user,
-        daily_limit=Decimal('1000.00'),
-        monthly_limit=Decimal('10000.00')
+        user=user, daily_limit=Decimal("1000.00"), monthly_limit=Decimal("10000.00")
     )
 
     if limits_set:
@@ -175,10 +174,7 @@ def demonstrate_wallet_operations():
 
     # 10. Get transaction history
     print(f"\n🔟 Getting transaction history...")
-    transactions = WalletService.get_transaction_history(
-        user=user,
-        limit=10
-    )
+    transactions = WalletService.get_transaction_history(user=user, limit=10)
 
     print(f"   📝 Found {len(transactions)} recent transactions:")
     for i, txn in enumerate(transactions, 1):
@@ -201,30 +197,28 @@ def demonstrate_wallet_operations():
     print(f"   📈 Total Credited: {final_balance.total_credited}")
     print(f"   📉 Total Debited: {final_balance.total_debited}")
 
-    print(f"\n" + "="*60)
+    print(f"\n" + "=" * 60)
     print("✅ DEMO COMPLETED SUCCESSFULLY!")
-    print("="*60)
+    print("=" * 60)
 
     return user
 
 
 def demonstrate_error_handling():
     """Demonstrate error handling scenarios."""
-    print(f"\n" + "="*60)
+    print(f"\n" + "=" * 60)
     print("⚠️  ERROR HANDLING DEMO")
-    print("="*60)
+    print("=" * 60)
 
     user = User.objects.get(telegram_id=123456789)
 
     # 1. Try to deduct more than available balance
     print(f"\n1️⃣ Testing insufficient balance scenario...")
     current_balance = WalletService.get_balance_info(user).current_balance
-    excessive_amount = current_balance + Decimal('1000.00')
+    excessive_amount = current_balance + Decimal("1000.00")
 
     result = WalletService.deduct_balance(
-        user=user,
-        amount=excessive_amount,
-        description="Test insufficient balance"
+        user=user, amount=excessive_amount, description="Test insufficient balance"
     )
 
     if not result.success:
@@ -234,25 +228,23 @@ def demonstrate_error_handling():
     # 2. Try invalid amount
     print(f"\n2️⃣ Testing invalid amount scenario...")
     result = WalletService.add_balance(
-        user=user,
-        amount=Decimal('-100.00'),
-        description="Test negative amount"
+        user=user, amount=Decimal("-100.00"), description="Test negative amount"
     )
 
     if not result.success:
         print(f"   ✅ Correctly handled negative amount!")
         print(f"   ❌ Error: {result.error}")
 
-    print(f"\n" + "="*60)
+    print(f"\n" + "=" * 60)
     print("✅ ERROR HANDLING DEMO COMPLETED!")
-    print("="*60)
+    print("=" * 60)
 
 
 def demonstrate_advanced_features():
     """Demonstrate advanced wallet features."""
-    print(f"\n" + "="*60)
+    print(f"\n" + "=" * 60)
     print("🚀 ADVANCED FEATURES DEMO")
-    print("="*60)
+    print("=" * 60)
 
     user = User.objects.get(telegram_id=123456789)
 
@@ -260,13 +252,11 @@ def demonstrate_advanced_features():
     print(f"\n1️⃣ Testing daily spending limit...")
 
     # Try to spend more than daily limit
-    daily_limit = Decimal('1000.00')
-    large_amount = Decimal('1200.00')
+    daily_limit = Decimal("1000.00")
+    large_amount = Decimal("1200.00")
 
     result = WalletService.deduct_balance(
-        user=user,
-        amount=large_amount,
-        description="Test daily limit"
+        user=user, amount=large_amount, description="Test daily limit"
     )
 
     if not result.success and "daily limit" in result.error.lower():
@@ -277,15 +267,11 @@ def demonstrate_advanced_features():
     print(f"\n2️⃣ Testing transaction filtering...")
 
     credit_transactions = WalletService.get_transaction_history(
-        user=user,
-        transaction_type=TransactionType.CREDIT,
-        limit=5
+        user=user, transaction_type=TransactionType.CREDIT, limit=5
     )
 
     debit_transactions = WalletService.get_transaction_history(
-        user=user,
-        transaction_type=TransactionType.DEBIT,
-        limit=5
+        user=user, transaction_type=TransactionType.DEBIT, limit=5
     )
 
     print(f"   💰 Credit transactions: {len(credit_transactions)}")
@@ -301,9 +287,7 @@ def demonstrate_advanced_features():
 
         # Try to spend from deactivated wallet
         result = WalletService.deduct_balance(
-            user=user,
-            amount=Decimal('100.00'),
-            description="Test deactivated wallet"
+            user=user, amount=Decimal("100.00"), description="Test deactivated wallet"
         )
 
         if not result.success:
@@ -315,9 +299,9 @@ def demonstrate_advanced_features():
     if reactivated:
         print(f"   ✅ Wallet reactivated successfully")
 
-    print(f"\n" + "="*60)
+    print(f"\n" + "=" * 60)
     print("✅ ADVANCED FEATURES DEMO COMPLETED!")
-    print("="*60)
+    print("=" * 60)
 
 
 def main():
@@ -340,6 +324,7 @@ def main():
     except Exception as e:
         print(f"❌ Demo failed with error: {e}")
         import traceback
+
         traceback.print_exc()
 
 

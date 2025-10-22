@@ -1,13 +1,13 @@
 # bot/handlers/webapp.py
 
-from aiogram import Router, F
+import logging
+
+from aiogram import F, Router
 from aiogram.filters import Command
-from aiogram.types import Message, WebAppInfo
+from aiogram.types import InlineKeyboardButton, KeyboardButton, Message, WebAppInfo
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
-from aiogram.types import InlineKeyboardButton, KeyboardButton
 
 from bot.config import settings
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -20,23 +20,18 @@ def get_webapp_keyboard():
 
     # Main webapp button
     builder.row(
-        InlineKeyboardButton(
-            text="🌐 Open Web App",
-            web_app=WebAppInfo(url=settings.webapp_url)
-        )
+        InlineKeyboardButton(text="🌐 Open Web App", web_app=WebAppInfo(url=settings.webapp_url))
     )
 
     # Quick action buttons
     builder.row(
         InlineKeyboardButton(
-            text="📤 Upload File",
-            web_app=WebAppInfo(url=f"{settings.webapp_url}/upload")
+            text="📤 Upload File", web_app=WebAppInfo(url=f"{settings.webapp_url}/upload")
         )
     )
     builder.row(
         InlineKeyboardButton(
-            text="📊 View History",
-            web_app=WebAppInfo(url=f"{settings.webapp_url}/transcriptions")
+            text="📊 View History", web_app=WebAppInfo(url=f"{settings.webapp_url}/transcriptions")
         )
     )
 
@@ -48,18 +43,10 @@ def get_webapp_menu_button():
     builder = ReplyKeyboardBuilder()
 
     # Webapp menu button
-    builder.row(
-        KeyboardButton(
-            text="🌐 Open Web App",
-            web_app=WebAppInfo(url=settings.webapp_url)
-        )
-    )
+    builder.row(KeyboardButton(text="🌐 Open Web App", web_app=WebAppInfo(url=settings.webapp_url)))
 
     # Regular buttons
-    builder.row(
-        KeyboardButton(text="💰 My Balance"),
-        KeyboardButton(text="ℹ️ Help")
-    )
+    builder.row(KeyboardButton(text="💰 My Balance"), KeyboardButton(text="ℹ️ Help"))
 
     return builder.as_markup(resize_keyboard=True)
 
@@ -77,7 +64,7 @@ async def cmd_webapp(message: Message):
         "• Download transcriptions\n"
         "• Better mobile experience\n\n"
         "Click the button below to open:",
-        reply_markup=get_webapp_keyboard()
+        reply_markup=get_webapp_keyboard(),
     )
 
 
@@ -91,7 +78,6 @@ async def webapp_button_handler(message: Message):
 async def cmd_webmenu(message: Message):
     """Set menu button with webapp"""
     await message.answer(
-        "📱 <b>Web App Menu</b>\n\n"
-        "Use the button below to access the web interface:",
-        reply_markup=get_webapp_menu_button()
+        "📱 <b>Web App Menu</b>\n\n" "Use the button below to access the web interface:",
+        reply_markup=get_webapp_menu_button(),
     )

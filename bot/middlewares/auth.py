@@ -4,17 +4,17 @@ Authentication middleware using Django ORM
 This middleware handles user registration and authentication using Django models.
 """
 
-from typing import Callable, Dict, Any, Awaitable
-from datetime import datetime
+import logging
+from typing import Any, Awaitable, Callable, Dict
+
 from aiogram import BaseMiddleware
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import CallbackQuery, Message
 from asgiref.sync import sync_to_async
 from django.utils import timezone
-import logging
 
+from bot.config import settings
 # Import Django models
 from bot.django_setup import TelegramUser, Wallet
-from bot.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class AuthMiddleware(BaseMiddleware):
             self,
             handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
             event: Message,
-            data: Dict[str, Any]
+            data: Dict[str, Any],
     ) -> Any:
         # Skip if not a message or callback query
         if not isinstance(event, (Message, CallbackQuery)):
@@ -54,7 +54,7 @@ class AuthMiddleware(BaseMiddleware):
 
             # Update last activity
             user.last_activity = timezone.now()
-            user.save(update_fields=['last_activity'])
+            user.save(update_fields=["last_activity"])
 
             # Get wallet
             wallet = Wallet.objects.get(user=user)
@@ -73,9 +73,7 @@ class AuthMiddleware(BaseMiddleware):
 
             # Create wallet for new user
             wallet = Wallet.objects.create(
-                user=user,
-                balance=settings.pricing.initial_balance,
-                currency="UZS"
+                user=user, balance=settings.pricing.initial_balance, currency="UZS"
             )
 
             logger.info(f"New user registered: {user_tg.id} (@{user_tg.username})")
@@ -83,9 +81,7 @@ class AuthMiddleware(BaseMiddleware):
         except Wallet.DoesNotExist:
             # Create wallet if missing (shouldn't happen, but just in case)
             wallet = Wallet.objects.create(
-                user=user,
-                balance=settings.pricing.initial_balance,
-                currency="UZS"
+                user=user, balance=settings.pricing.initial_balance, currency="UZS"
             )
             logger.warning(f"Created missing wallet for user {user.telegram_id}")
 

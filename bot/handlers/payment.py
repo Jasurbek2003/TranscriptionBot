@@ -1,24 +1,24 @@
 """Payment handlers with Click and Payme integration using Django ORM."""
 
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
-from aiogram.fsm.context import FSMContext
-from decimal import Decimal
 import logging
 import uuid
+from decimal import Decimal
+
+from aiogram import F, Router
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 from asgiref.sync import sync_to_async
 
-from bot.states import PaymentStates
-from bot.keyboards.payment_keyboards import (
-    get_payment_methods_keyboard,
-    get_amount_keyboard,
-    get_payment_confirmation_keyboard
-)
-from bot.keyboards.main_menu import get_cancel_keyboard
 from bot.config import settings
 from bot.django_setup import Transaction, Wallet
-from services.payment.payme_service import PaymeService
+from bot.keyboards.main_menu import get_cancel_keyboard
+from bot.keyboards.payment_keyboards import (
+    get_amount_keyboard,
+    get_payment_methods_keyboard,
+)
+from bot.states import PaymentStates
 from services.payment.click_service import ClickService
+from services.payment.payme_service import PaymeService
 from services.wallet_service import WalletService
 
 logger = logging.getLogger(__name__)
@@ -32,20 +32,13 @@ async def start_topup(message: Message, state: FSMContext):
     await state.set_state(PaymentStates.choosing_payment_method)
 
     await message.answer(
-        "💳 <b>Top Up Balance</b>\n\n"
-        "Choose your payment method:",
-        reply_markup=get_payment_methods_keyboard()
+        "💳 <b>Top Up Balance</b>\n\n" "Choose your payment method:",
+        reply_markup=get_payment_methods_keyboard(),
     )
 
 
-@router.callback_query(
-    PaymentStates.choosing_payment_method,
-    F.data.startswith("payment:")
-)
-async def choose_payment_method(
-        callback: CallbackQuery,
-        state: FSMContext
-):
+@router.callback_query(PaymentStates.choosing_payment_method, F.data.startswith("payment:"))
+async def choose_payment_method(callback: CallbackQuery, state: FSMContext):
     """Handle payment method selection"""
     method = callback.data.split(":")[1]
 
@@ -55,7 +48,7 @@ async def choose_payment_method(
         await callback.answer()
         return
 
-    print("Selected payment method:", method)
+    logger.info(f"User {callback.from_user.id} selected payment method: {method}")
 
     # Save payment method
     await state.update_data(payment_method=method)
@@ -68,20 +61,13 @@ async def choose_payment_method(
         f"Minimum: {settings.pricing.min_payment_amount:,.0f} UZS\n"
         f"Maximum: {settings.pricing.max_payment_amount:,.0f} UZS\n\n"
         f"Select or enter custom amount:",
-        reply_markup=get_amount_keyboard()
+        reply_markup=get_amount_keyboard(),
     )
     await callback.answer()
 
 
-@router.callback_query(
-    PaymentStates.entering_amount,
-    F.data.startswith("amount:")
-)
-async def handle_amount_selection(
-        callback: CallbackQuery,
-        state: FSMContext,
-        user
-):
+@router.callback_query(PaymentStates.entering_amount, F.data.startswith("amount:"))
+async def handle_amount_selection(callback: CallbackQuery, state: FSMContext, user):
     """Handle amount selection"""
     amount_str = callback.data.split(":")[1]
 
@@ -97,10 +83,7 @@ async def handle_amount_selection(
             f"Minimum: {settings.pricing.min_payment_amount:,.0f} UZS\n"
             f"Maximum: {settings.pricing.max_payment_amount:,.0f} UZS"
         )
-        await callback.message.answer(
-            "Enter amount:",
-            reply_markup=get_cancel_keyboard()
-        )
+        await callback.message.answer("Enter amount:", reply_markup=get_cancel_keyboard())
         await callback.answer()
         return
 
@@ -113,15 +96,13 @@ async def handle_amount_selection(
     # Validate amount
     if amount < settings.pricing.min_payment_amount:
         await callback.answer(
-            f"Minimum amount is {settings.pricing.min_payment_amount:,.0f} UZS",
-            show_alert=True
+            f"Minimum amount is {settings.pricing.min_payment_amount:,.0f} UZS", show_alert=True
         )
         return
 
     if amount > settings.pricing.max_payment_amount:
         await callback.answer(
-            f"Maximum amount is {settings.pricing.max_payment_amount:,.0f} UZS",
-            show_alert=True
+            f"Maximum amount is {settings.pricing.max_payment_amount:,.0f} UZS", show_alert=True
         )
         return
 
@@ -130,15 +111,8 @@ async def handle_amount_selection(
     await callback.answer()
 
 
-@router.message(
-    PaymentStates.entering_amount,
-    F.text.regexp(r"^\d+(\.\d{1,2})?$")
-)
-async def handle_custom_amount(
-        message: Message,
-        state: FSMContext,
-        user
-):
+@router.message(PaymentStates.entering_amount, F.text.regexp(r"^\d+(\.\d{1,2})?$"))
+async def handle_custom_amount(message: Message, state: FSMContext, user):
     """Handle custom amount input"""
     try:
         amount = float(message.text)
@@ -148,26 +122,17 @@ async def handle_custom_amount(
 
     # Validate amount
     if amount < settings.pricing.min_payment_amount:
-        await message.answer(
-            f"❌ Minimum amount is {settings.pricing.min_payment_amount:,.0f} UZS"
-        )
+        await message.answer(f"❌ Minimum amount is {settings.pricing.min_payment_amount:,.0f} UZS")
         return
 
     if amount > settings.pricing.max_payment_amount:
-        await message.answer(
-            f"❌ Maximum amount is {settings.pricing.max_payment_amount:,.0f} UZS"
-        )
+        await message.answer(f"❌ Maximum amount is {settings.pricing.max_payment_amount:,.0f} UZS")
         return
 
     await process_payment(message, state, user, amount)
 
 
-async def process_payment(
-        message: Message,
-        state: FSMContext,
-        user,
-        amount: float
-):
+async def process_payment(message: Message, state: FSMContext, user, amount: float):
     """Process payment with selected method"""
     data = await state.get_data()
     payment_method = data.get("payment_method")
@@ -192,16 +157,13 @@ async def process_payment(
             payment_method=payment_method,
             status="pending",
             reference_id=transaction_id,
-            description=f"Top up via {payment_method.capitalize()}"
+            description=f"Top up via {payment_method.capitalize()}",
         )
 
     transaction = await create_transaction()
 
     # Save transaction data
-    await state.update_data(
-        amount=amount,
-        transaction_id=transaction_id
-    )
+    await state.update_data(amount=amount, transaction_id=transaction_id)
     await state.set_state(PaymentStates.waiting_for_payment)
 
     # Initialize payment services
@@ -209,24 +171,24 @@ async def process_payment(
         payment_service = PaymeService(
             merchant_id=settings.payment.payme_merchant_id,
             secret_key=settings.payment.payme_secret_key,
-            test_mode=settings.payment.payme_test_mode
+            test_mode=settings.payment.payme_test_mode,
         )
         payment_url = payment_service.create_payment_link(
             amount=amount,
             order_id=transaction_id,
-            return_url=None  # Optional: add return URL if needed
+            return_url=None,  # Optional: add return URL if needed
         )
     elif payment_method == "click":
         payment_service = ClickService(
             merchant_id=settings.payment.click_merchant_id,
             service_id=settings.payment.click_service_id,
             secret_key=settings.payment.click_secret_key,
-            test_mode=settings.payment.click_test_mode
+            test_mode=settings.payment.click_test_mode,
         )
         payment_url = payment_service.create_payment_link(
             amount=amount,
             order_id=transaction_id,
-            return_url=None  # Optional: add return URL if needed
+            return_url=None,  # Optional: add return URL if needed
         )
     else:
         await message.answer("❌ Invalid payment method")
@@ -234,11 +196,21 @@ async def process_payment(
         return
 
     # Create payment button
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💳 Pay Now", url=payment_url)],
-        [InlineKeyboardButton(text="✅ I have paid", callback_data=f"confirm_payment:{transaction_id}")],
-        [InlineKeyboardButton(text="❌ Cancel payment", callback_data=f"cancel_payment:{transaction_id}")]
-    ])
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="💳 Pay Now", url=payment_url)],
+            [
+                InlineKeyboardButton(
+                    text="✅ I have paid", callback_data=f"confirm_payment:{transaction_id}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="❌ Cancel payment", callback_data=f"cancel_payment:{transaction_id}"
+                )
+            ],
+        ]
+    )
 
     # Send payment instructions
     await message.answer(
@@ -251,27 +223,19 @@ async def process_payment(
         f"2. Complete payment on {payment_method.capitalize()} page\n"
         f"3. Return here and click '<b>I have paid</b>'\n\n"
         f"⚠️ <i>Payment will be automatically verified within seconds</i>",
-        reply_markup=keyboard
+        reply_markup=keyboard,
     )
 
 
 @router.callback_query(F.data.startswith("confirm_payment:"))
-async def confirm_payment(
-        callback: CallbackQuery,
-        state: FSMContext,
-        user,
-        wallet
-):
+async def confirm_payment(callback: CallbackQuery, state: FSMContext, user, wallet):
     """Handle payment confirmation - check if payment was received"""
     transaction_id = callback.data.split(":")[1]
 
     # Get transaction from database
     @sync_to_async
     def get_transaction():
-        return Transaction.objects.filter(
-            reference_id=transaction_id,
-            user_id=user.id
-        ).first()
+        return Transaction.objects.filter(reference_id=transaction_id, user_id=user.id).first()
 
     transaction = await get_transaction()
 
@@ -292,7 +256,7 @@ async def confirm_payment(
         "⏳ Checking payment status...\n\n"
         "If you've completed the payment, it will be verified automatically within 1-2 minutes.\n\n"
         "The payment gateway will send us a confirmation.",
-        show_alert=True
+        show_alert=True,
     )
 
     # Check transaction status again (in case webhook already updated it)
@@ -335,19 +299,25 @@ async def confirm_payment(
             f"🆔 Transaction ID: <code>{transaction_id}</code>\n\n"
             f"Your payment is being processed. You will receive a confirmation message once it's verified.\n\n"
             f"⚠️ <i>This usually takes 1-2 minutes</i>",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🔄 Check Again", callback_data=f"confirm_payment:{transaction_id}")],
-                [InlineKeyboardButton(text="❌ Cancel", callback_data=f"cancel_payment:{transaction_id}")]
-            ])
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(
+                            text="🔄 Check Again", callback_data=f"confirm_payment:{transaction_id}"
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            text="❌ Cancel", callback_data=f"cancel_payment:{transaction_id}"
+                        )
+                    ],
+                ]
+            ),
         )
 
 
 @router.callback_query(F.data.startswith("cancel_payment:"))
-async def cancel_payment(
-        callback: CallbackQuery,
-        state: FSMContext,
-        user
-):
+async def cancel_payment(callback: CallbackQuery, state: FSMContext, user):
     """Handle payment cancellation"""
     transaction_id = callback.data.split(":")[1]
 
@@ -355,8 +325,7 @@ async def cancel_payment(
     @sync_to_async
     def cancel_transaction():
         transaction = Transaction.objects.filter(
-            reference_id=transaction_id,
-            user_id=user.id
+            reference_id=transaction_id, user_id=user.id
         ).first()
 
         if transaction and transaction.status == "pending":

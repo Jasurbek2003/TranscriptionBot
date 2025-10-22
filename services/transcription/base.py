@@ -1,8 +1,8 @@
 """Base transcription service interface."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
 from pathlib import Path
+from typing import Any, Dict
 
 
 class BaseTranscriptionService(ABC):

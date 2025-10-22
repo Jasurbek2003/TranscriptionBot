@@ -1,0 +1,63 @@
+[flake8]
+# Flake8 configuration for the project
+
+max-line-length = 100
+extend-ignore = E203, W503, E501
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    migrations,
+    */migrations/*,
+    build,
+    dist,
+    .eggs,
+    *.egg-info,
+    .mypy_cache,
+    .pytest_cache,
+    node_modules,
+    staticfiles,
+    media,
+    bot/main_backup.py,
+    django_admin/apps/transactions/views_backup.py,
+    django_admin/apps/transactions/urls_backup.py,
+    examples/wallet_integration_demo.py
+
+# Error codes to check
+select = C,E,F,W,B,B950
+
+# Maximum complexity
+max-complexity = 15
+
+# Per-file ignores
+per-file-ignores =
+    __init__.py:F401
+    settings/*.py:F405,F403
+    */tests/*.py:F401,F811,F841,B950
+    */conftest.py:F401,F811
+    bot/handlers/admin.py:F821,F841,F541,B950
+    bot/handlers/history.py:F821,F841,F541
+    bot/handlers/media.py:F401,F811,B950
+    bot/handlers/payment.py:F401,F841,B950
+    bot/handlers/start.py:F401,F841
+    bot/handlers/webapp.py:F401
+    bot/keyboards/payment_keyboards.py:F401
+    bot/main.py:F401,F403,E402
+    bot/django_setup.py:E402
+    bot/middlewares/*.py:F401,E402
+    bot/utils/*.py:F401,E402,F403
+    services/media_utils.py:F401
+    django_admin/apps/*/admin.py:F401
+    django_admin/apps/*/models.py:F401
+    django_admin/apps/*/utils.py:F401
+    django_admin/apps/*/views.py:F401,F841,F541,B950,E402,C901
+    django_admin/apps/*/serializers.py:F401
+    django_admin/apps/*/tests/*.py:F401,F841,B950
+    django_admin/config/health_checks.py:F401
+    django_admin/webapp/*.py:F401,F841,F821,B950
+    services/payment/*.py:F401,F841
+
+# Plugins
+# B = flake8-bugbear
+# B950 = line too long (more lenient than E501)

@@ -1,6 +1,8 @@
 from typing import Any, Dict, Union
+
 from aiogram.filters import Filter
 from aiogram.types import Message
+
 from bot.config import settings
 
 
@@ -31,7 +33,7 @@ class AudioFilter(Filter):
             "media_type": "audio",
             "duration": media.duration,
             "file_id": media.file_id,
-            "file_size": media.file_size
+            "file_size": media.file_size,
         }
 
 
@@ -55,7 +57,7 @@ class VideoFilter(Filter):
             "media_type": "video",
             "duration": media.duration,
             "file_id": media.file_id,
-            "file_size": media.file_size
+            "file_size": media.file_size,
         }
 
 
@@ -99,10 +101,8 @@ class BalanceFilter(Filter):
 
         # Determine media type and calculate minimum cost
         if message.audio or message.voice:
-            media_type = "audio"
             price_per_min = settings.pricing.audio_price_per_min
         else:
-            media_type = "video"
             price_per_min = settings.pricing.video_price_per_min
 
         # Calculate minimum cost (1 minute)

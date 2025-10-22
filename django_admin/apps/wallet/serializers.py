@@ -1,40 +1,41 @@
 from rest_framework import serializers
+
 from .models import Wallet
 
 
 class WalletSerializer(serializers.ModelSerializer):
     """Serializer for wallet"""
 
-    user_id = serializers.ReadOnlyField(source='user.telegram_id')
-    username = serializers.ReadOnlyField(source='user.telegram_username')
+    user_id = serializers.ReadOnlyField(source="user.telegram_id")
+    username = serializers.ReadOnlyField(source="user.telegram_username")
     daily_spent = serializers.SerializerMethodField()
     monthly_spent = serializers.SerializerMethodField()
 
     class Meta:
         model = Wallet
         fields = [
-            'id',
-            'user_id',
-            'username',
-            'balance',
-            'currency',
-            'is_active',
-            'daily_limit',
-            'monthly_limit',
-            'daily_spent',
-            'monthly_spent',
-            'total_credited',
-            'total_debited',
-            'last_transaction_at',
-            'created_at',
-            'updated_at'
+            "id",
+            "user_id",
+            "username",
+            "balance",
+            "currency",
+            "is_active",
+            "daily_limit",
+            "monthly_limit",
+            "daily_spent",
+            "monthly_spent",
+            "total_credited",
+            "total_debited",
+            "last_transaction_at",
+            "created_at",
+            "updated_at",
         ]
         read_only_fields = [
-            'total_credited',
-            'total_debited',
-            'last_transaction_at',
-            'created_at',
-            'updated_at'
+            "total_credited",
+            "total_debited",
+            "last_transaction_at",
+            "created_at",
+            "updated_at",
         ]
 
     def get_daily_spent(self, obj):

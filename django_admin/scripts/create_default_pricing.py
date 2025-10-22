@@ -3,23 +3,25 @@
 Create default pricing plan in database
 """
 
-import sys
 import os
-from pathlib import Path
+import sys
 from decimal import Decimal
+from pathlib import Path
 
 # Add django_admin to path
 sys.path.append(str(Path(__file__).parent.parent))
 
 # Setup Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.development")
 
 import django
+
 django.setup()
+
+import logging
 
 from apps.pricing.models import PricingPlan
 from bot.config import settings
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -38,7 +40,7 @@ def create_default_pricing():
 
         # Ask if should update
         response = input("\nUpdate existing plan? (yes/no): ").strip().lower()
-        if response not in ['yes', 'y']:
+        if response not in ["yes", "y"]:
             logger.info("Skipping update")
             return existing_plan
 
@@ -59,14 +61,14 @@ def create_default_pricing():
         description="Default pricing plan for all users",
         audio_price_per_minute=Decimal(str(settings.pricing.audio_price_per_min)),
         video_price_per_minute=Decimal(str(settings.pricing.video_price_per_min)),
-        fast_quality_multiplier=Decimal('0.8'),
-        normal_quality_multiplier=Decimal('1.0'),
-        high_quality_multiplier=Decimal('1.5'),
-        discount_percentage=Decimal('0'),
+        fast_quality_multiplier=Decimal("0.8"),
+        normal_quality_multiplier=Decimal("1.0"),
+        high_quality_multiplier=Decimal("1.5"),
+        discount_percentage=Decimal("0"),
         max_duration_seconds=settings.ai.max_audio_duration_seconds,
         max_file_size_mb=settings.ai.max_file_size_mb,
         is_active=True,
-        is_default=True
+        is_default=True,
     )
 
     logger.info("✅ Created default pricing plan!")

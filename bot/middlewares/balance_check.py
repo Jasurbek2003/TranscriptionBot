@@ -1,9 +1,10 @@
-from typing import Callable, Dict, Any, Awaitable
+import logging
+from typing import Any, Awaitable, Callable, Dict
+
 from aiogram import BaseMiddleware
 from aiogram.types import Message
+
 from bot.config import settings
-from services.payment.wallet_service import WalletService
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ class BalanceCheckMiddleware(BaseMiddleware):
             self,
             handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
             event: Message,
-            data: Dict[str, Any]
+            data: Dict[str, Any],
     ) -> Any:
         # Only check for media messages
         if not isinstance(event, Message):
@@ -32,11 +33,13 @@ class BalanceCheckMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         # Calculate estimated cost
-        duration_seconds = media.duration if hasattr(media, 'duration') else 0
+        duration_seconds = media.duration if hasattr(media, "duration") else 0
         duration_minutes = (duration_seconds + 59) // 60  # Round up
 
         is_video = bool(event.video or event.video_note)
-        price_per_minute = settings.VIDEO_PRICE_PER_MIN if is_video else settings.AUDIO_PRICE_PER_MIN
+        price_per_minute = (
+            settings.VIDEO_PRICE_PER_MIN if is_video else settings.AUDIO_PRICE_PER_MIN
+        )
         estimated_cost = duration_minutes * price_per_minute
 
         # Check balance

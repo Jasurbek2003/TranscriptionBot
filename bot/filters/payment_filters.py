@@ -1,6 +1,7 @@
+import re
+
 from aiogram.filters import Filter
 from aiogram.types import CallbackQuery
-import re
 
 
 class PaymentCallbackFilter(Filter):

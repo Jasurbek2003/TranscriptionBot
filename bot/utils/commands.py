@@ -1,7 +1,9 @@
-from aiogram import Bot
-from aiogram.types import BotCommand, BotCommandScopeDefault, BotCommandScopeChat
-from bot.config import settings
 import logging
+
+from aiogram import Bot
+from aiogram.types import BotCommand, BotCommandScopeChat, BotCommandScopeDefault
+
+from bot.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -33,17 +35,13 @@ async def set_bot_commands(bot: Bot):
 
     try:
         # Set default commands for all users
-        await bot.set_my_commands(
-            commands=default_commands,
-            scope=BotCommandScopeDefault()
-        )
+        await bot.set_my_commands(commands=default_commands, scope=BotCommandScopeDefault())
 
         # Set admin commands for admin users
         for admin_id in settings.admin_ids:
             try:
                 await bot.set_my_commands(
-                    commands=admin_commands,
-                    scope=BotCommandScopeChat(chat_id=admin_id)
+                    commands=admin_commands, scope=BotCommandScopeChat(chat_id=admin_id)
                 )
             except Exception as e:
                 logger.error(f"Failed to set admin commands for {admin_id}: {e}")

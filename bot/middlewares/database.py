@@ -5,10 +5,11 @@ This middleware ensures Django is initialized and handles database operations.
 Django ORM is synchronous, so we use sync_to_async for async contexts.
 """
 
-from typing import Callable, Dict, Any, Awaitable
+import logging
+from typing import Any, Awaitable, Callable, Dict
+
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class DatabaseMiddleware(BaseMiddleware):
             self,
             handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
             event: TelegramObject,
-            data: Dict[str, Any]
+            data: Dict[str, Any],
     ) -> Any:
         """
         Process the event with Django ORM

@@ -1,10 +1,10 @@
+import json
 import logging
 import logging.handlers
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
-from datetime import datetime
-import json
 
 
 class JsonFormatter(logging.Formatter):
@@ -24,10 +24,10 @@ class JsonFormatter(logging.Formatter):
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
 
-        if hasattr(record, 'user_id'):
+        if hasattr(record, "user_id"):
             log_data["user_id"] = record.user_id
 
-        if hasattr(record, 'request_id'):
+        if hasattr(record, "request_id"):
             log_data["request_id"] = record.request_id
 
         return json.dumps(log_data, ensure_ascii=False)
@@ -37,13 +37,13 @@ class ColoredFormatter(logging.Formatter):
     """Colored console log formatter"""
 
     COLORS = {
-        'DEBUG': '\033[36m',  # Cyan
-        'INFO': '\033[32m',  # Green
-        'WARNING': '\033[33m',  # Yellow
-        'ERROR': '\033[31m',  # Red
-        'CRITICAL': '\033[35m',  # Magenta
+        "DEBUG": "\033[36m",  # Cyan
+        "INFO": "\033[32m",  # Green
+        "WARNING": "\033[33m",  # Yellow
+        "ERROR": "\033[31m",  # Red
+        "CRITICAL": "\033[35m",  # Magenta
     }
-    RESET = '\033[0m'
+    RESET = "\033[0m"
 
     def format(self, record: logging.LogRecord) -> str:
         log_color = self.COLORS.get(record.levelname, self.RESET)
@@ -57,7 +57,7 @@ def setup_logging(
         console: bool = True,
         file: bool = True,
         json_format: bool = False,
-        colored: bool = True
+        colored: bool = True,
 ) -> None:
     """
     Setup logging configuration
@@ -92,13 +92,11 @@ def setup_logging(
             console_formatter = JsonFormatter()
         elif colored and sys.stdout.isatty():
             console_formatter = ColoredFormatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
             )
         else:
             console_formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
             )
 
         console_handler.setFormatter(console_formatter)
@@ -108,9 +106,7 @@ def setup_logging(
     if file and log_dir:
         # Main log file
         file_handler = logging.handlers.RotatingFileHandler(
-            log_dir / 'app.log',
-            maxBytes=10 * 1024 * 1024,  # 10 MB
-            backupCount=10
+            log_dir / "app.log", maxBytes=10 * 1024 * 1024, backupCount=10  # 10 MB
         )
         file_handler.setLevel(logging.DEBUG)
 
@@ -118,8 +114,8 @@ def setup_logging(
             file_formatter = JsonFormatter()
         else:
             file_formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(module)s:%(lineno)d - %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
+                "%(asctime)s - %(name)s - %(levelname)s - %(module)s:%(lineno)d - %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
             )
 
         file_handler.setFormatter(file_formatter)
@@ -127,19 +123,17 @@ def setup_logging(
 
         # Error log file
         error_handler = logging.handlers.RotatingFileHandler(
-            log_dir / 'error.log',
-            maxBytes=10 * 1024 * 1024,  # 10 MB
-            backupCount=10
+            log_dir / "error.log", maxBytes=10 * 1024 * 1024, backupCount=10  # 10 MB
         )
         error_handler.setLevel(logging.ERROR)
         error_handler.setFormatter(file_formatter)
         root_logger.addHandler(error_handler)
 
     # Configure third-party loggers
-    logging.getLogger('aiogram').setLevel(logging.INFO)
-    logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
-    logging.getLogger('urllib3').setLevel(logging.WARNING)
-    logging.getLogger('asyncio').setLevel(logging.WARNING)
+    logging.getLogger("aiogram").setLevel(logging.INFO)
+    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
 
     logger = logging.getLogger(__name__)
     logger.info(f"Logging configured: level={level}, console={console}, file={file}")
@@ -168,17 +162,14 @@ class LoggerAdapter(logging.LoggerAdapter):
 
     def process(self, msg, kwargs):
         # Add extra context to all log messages
-        if 'extra' not in kwargs:
-            kwargs['extra'] = {}
-        kwargs['extra'].update(self.extra)
+        if "extra" not in kwargs:
+            kwargs["extra"] = {}
+        kwargs["extra"].update(self.extra)
         return msg, kwargs
 
 
 def get_context_logger(
-        name: str,
-        user_id: Optional[int] = None,
-        request_id: Optional[str] = None,
-        **kwargs
+        name: str, user_id: Optional[int] = None, request_id: Optional[str] = None, **kwargs
 ) -> LoggerAdapter:
     """
     Get logger with context
@@ -196,9 +187,9 @@ def get_context_logger(
     extra = {}
 
     if user_id:
-        extra['user_id'] = user_id
+        extra["user_id"] = user_id
     if request_id:
-        extra['request_id'] = request_id
+        extra["request_id"] = request_id
 
     extra.update(kwargs)
 
@@ -208,28 +199,28 @@ def get_context_logger(
 # Convenience functions for module-level logging
 def log_debug(message: str, **kwargs):
     """Log debug message"""
-    get_logger('core').debug(message, extra=kwargs)
+    get_logger("core").debug(message, extra=kwargs)
 
 
 def log_info(message: str, **kwargs):
     """Log info message"""
-    get_logger('core').info(message, extra=kwargs)
+    get_logger("core").info(message, extra=kwargs)
 
 
 def log_warning(message: str, **kwargs):
     """Log warning message"""
-    get_logger('core').warning(message, extra=kwargs)
+    get_logger("core").warning(message, extra=kwargs)
 
 
 def log_error(message: str, exc_info: bool = False, **kwargs):
     """Log error message"""
-    get_logger('core').error(message, exc_info=exc_info, extra=kwargs)
+    get_logger("core").error(message, exc_info=exc_info, extra=kwargs)
 
 
 def log_critical(message: str, exc_info: bool = False, **kwargs):
     """Log critical message"""
-    get_logger('core').critical(message, exc_info=exc_info, extra=kwargs)
+    get_logger("core").critical(message, exc_info=exc_info, extra=kwargs)
 
 
 # Default logger instance for easy importing
-logger = get_logger('core')
+logger = get_logger("core")

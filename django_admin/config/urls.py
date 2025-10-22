@@ -1,25 +1,32 @@
-from django.contrib import admin
-from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path
+
+from .health_checks import detailed_status, health_check, ready_check
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path("admin/", admin.site.urls),
+    # Health check endpoints (for monitoring and load balancers)
+    path("health/", health_check, name="health"),
+    path("ready/", ready_check, name="ready"),
+    path("status/", detailed_status, name="status"),
     # Web interface
-    path('', include('webapp.urls')),
+    path("", include("webapp.urls")),
     # API URLs
-    path('api/users/', include('apps.users.urls')),
-    path('api/wallet/', include('apps.wallet.urls')),
-    path('api/transactions/', include('apps.transactions.urls')),
+    path("api/users/", include("apps.users.urls")),
+    path("api/wallet/", include("apps.wallet.urls")),
+    path("api/transactions/", include("apps.transactions.urls")),
     # path('api/transcriptions/', include('apps.transcriptions.urls')),
 ]
 
 # Add Debug Toolbar URLs only in DEBUG mode
 if settings.DEBUG:
     import debug_toolbar
+
     urlpatterns = [
-        path('__debug__/', include(debug_toolbar.urls)),
-    ] + urlpatterns
+                      path("__debug__/", include(debug_toolbar.urls)),
+                  ] + urlpatterns
 
     # Also serve media files in development
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

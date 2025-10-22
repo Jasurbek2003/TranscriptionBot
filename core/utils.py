@@ -1,12 +1,12 @@
 import hashlib
 import hmac
-import random
-import string
-import re
-from datetime import datetime, timedelta
-from typing import Any
-from decimal import Decimal
 import json
+import random
+import re
+import string
+from datetime import datetime, timedelta
+from decimal import Decimal
+from typing import Any
 
 
 class SecurityUtils:
@@ -16,21 +16,18 @@ class SecurityUtils:
     def generate_token(length: int = 32) -> str:
         """Generate random token"""
         characters = string.ascii_letters + string.digits
-        return ''.join(random.choices(characters, k=length))
+        return "".join(random.choices(characters, k=length))
 
     @staticmethod
     def generate_otp(length: int = 6) -> str:
         """Generate OTP code"""
-        return ''.join(random.choices(string.digits, k=length))
+        return "".join(random.choices(string.digits, k=length))
 
     @staticmethod
     def hash_password(password: str, salt: str) -> str:
         """Hash password with salt"""
         return hashlib.pbkdf2_hmac(
-            'sha256',
-            password.encode('utf-8'),
-            salt.encode('utf-8'),
-            100000
+            "sha256", password.encode("utf-8"), salt.encode("utf-8"), 100000
         ).hex()
 
     @staticmethod
@@ -41,11 +38,7 @@ class SecurityUtils:
     @staticmethod
     def generate_signature(data: str, secret: str) -> str:
         """Generate HMAC signature"""
-        return hmac.new(
-            secret.encode('utf-8'),
-            data.encode('utf-8'),
-            hashlib.sha256
-        ).hexdigest()
+        return hmac.new(secret.encode("utf-8"), data.encode("utf-8"), hashlib.sha256).hexdigest()
 
     @staticmethod
     def verify_signature(data: str, secret: str, signature: str) -> bool:
@@ -91,8 +84,10 @@ class DateTimeUtils:
     def get_age(birth_date: datetime) -> int:
         """Calculate age from birth date"""
         today = datetime.today()
-        return today.year - birth_date.year - (
-                (today.month, today.day) < (birth_date.month, birth_date.day)
+        return (
+                today.year
+                - birth_date.year
+                - ((today.month, today.day) < (birth_date.month, birth_date.day))
         )
 
     @staticmethod
@@ -108,16 +103,16 @@ class StringUtils:
     def slugify(text: str) -> str:
         """Convert text to slug"""
         text = text.lower()
-        text = re.sub(r'[^\w\s-]', '', text)
-        text = re.sub(r'[-\s]+', '-', text)
-        return text.strip('-')
+        text = re.sub(r"[^\w\s-]", "", text)
+        text = re.sub(r"[-\s]+", "-", text)
+        return text.strip("-")
 
     @staticmethod
     def truncate(text: str, length: int, suffix: str = "...") -> str:
         """Truncate text to specified length"""
         if len(text) <= length:
             return text
-        return text[:length - len(suffix)] + suffix
+        return text[: length - len(suffix)] + suffix
 
     @staticmethod
     def mask_phone(phone: str) -> str:
@@ -129,7 +124,7 @@ class StringUtils:
     @staticmethod
     def mask_email(email: str) -> str:
         """Mask email address"""
-        parts = email.split('@')
+        parts = email.split("@")
         if len(parts) != 2:
             return email
         username = parts[0]
@@ -142,7 +137,7 @@ class StringUtils:
     @staticmethod
     def capitalize_words(text: str) -> str:
         """Capitalize first letter of each word"""
-        return ' '.join(word.capitalize() for word in text.split())
+        return " ".join(word.capitalize() for word in text.split())
 
 
 class ValidationUtils:
@@ -151,19 +146,19 @@ class ValidationUtils:
     @staticmethod
     def is_valid_email(email: str) -> bool:
         """Validate email format"""
-        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+        pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
         return bool(re.match(pattern, email))
 
     @staticmethod
     def is_valid_phone(phone: str) -> bool:
         """Validate phone number (Uzbek format)"""
-        pattern = r'^\+998[0-9]{9}'
+        pattern = r"^\+998[0-9]{9}"
         return bool(re.match(pattern, phone))
 
     @staticmethod
     def is_valid_username(username: str) -> bool:
         """Validate username"""
-        pattern = r'^[a-zA-Z0-9_]{3,32}'
+        pattern = r"^[a-zA-Z0-9_]{3,32}"
         return bool(re.match(pattern, username))
 
     @staticmethod
@@ -189,7 +184,7 @@ class MoneyUtils:
     @staticmethod
     def calculate_fee(amount: Decimal, fee_rate: Decimal) -> Decimal:
         """Calculate fee amount"""
-        return (amount * fee_rate).quantize(Decimal('0.01'))
+        return (amount * fee_rate).quantize(Decimal("0.01"))
 
     @staticmethod
     def add_fee(amount: Decimal, fee_rate: Decimal) -> Decimal:
@@ -223,7 +218,7 @@ class JsonUtils:
     @staticmethod
     def compact_json(data: Any) -> str:
         """Convert to compact JSON string"""
-        return json.dumps(data, separators=(',', ':'), ensure_ascii=False, default=str)
+        return json.dumps(data, separators=(",", ":"), ensure_ascii=False, default=str)
 
 
 class FileUtils:
@@ -232,20 +227,20 @@ class FileUtils:
     @staticmethod
     def get_file_extension(filename: str) -> str:
         """Get file extension"""
-        parts = filename.rsplit('.', 1)
-        return parts[1].lower() if len(parts) > 1 else ''
+        parts = filename.rsplit(".", 1)
+        return parts[1].lower() if len(parts) > 1 else ""
 
     @staticmethod
     def generate_filename(prefix: str, extension: str) -> str:
         """Generate unique filename"""
-        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         random_str = SecurityUtils.generate_token(8)
         return f"{prefix}_{timestamp}_{random_str}.{extension}"
 
     @staticmethod
     def format_file_size(size_bytes: int) -> str:
         """Format file size to human readable"""
-        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        for unit in ["B", "KB", "MB", "GB", "TB"]:
             if size_bytes < 1024.0:
                 return f"{size_bytes:.2f} {unit}"
             size_bytes /= 1024.0

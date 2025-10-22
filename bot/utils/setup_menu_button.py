@@ -11,12 +11,12 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from bot.django_setup import *
+import logging
 
 from aiogram import Bot
-from aiogram.types import BotCommand, MenuButtonWebApp, WebAppInfo, BotCommandScopeDefault
+from aiogram.types import BotCommand, BotCommandScopeDefault, MenuButtonWebApp, WebAppInfo
+
 from bot.config import settings
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,8 +29,7 @@ async def setup_menu_button():
     try:
         # Set menu button with webapp
         menu_button = MenuButtonWebApp(
-            text="Open Web App",
-            web_app=WebAppInfo(url=settings.webapp_url)
+            text="Open Web App", web_app=WebAppInfo(url=settings.webapp_url)
         )
 
         await bot.set_chat_menu_button(menu_button=menu_button)
@@ -84,9 +83,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Setup Telegram Bot Menu Button")
     parser.add_argument(
-        "--remove",
-        action="store_true",
-        help="Remove the menu button instead of setting it"
+        "--remove", action="store_true", help="Remove the menu button instead of setting it"
     )
 
     args = parser.parse_args()

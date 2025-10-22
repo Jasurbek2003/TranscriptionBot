@@ -1,21 +1,27 @@
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.fsm.context import FSMContext
-from datetime import datetime
-from decimal import Decimal
-from django.db.models import Sum
 import asyncio
 import logging
-from asgiref.sync import sync_to_async
+from decimal import Decimal
 
-from bot.filters import AudioFilter, VideoFilter, FileSizeFilter
-from bot.states import TranscriptionStates
-from bot.keyboards.inline_keyboards import get_transcription_keyboard, get_rating_keyboard
+from aiogram import F, Router
+from aiogram.fsm.context import FSMContext
+from aiogram.types import (
+    BufferedInputFile,
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
+from asgiref.sync import sync_to_async
+from django.db.models import Sum
+
 from bot.config import settings
 from bot.django_setup import Transcription
+from bot.filters import AudioFilter, VideoFilter
+from bot.keyboards.inline_keyboards import get_transcription_keyboard
+from bot.states import TranscriptionStates
+from services.auth_service import AuthService
 from services.transcription.gemini_service import GeminiTranscriptionService
 from services.wallet_service import WalletService
-from services.auth_service import AuthService
 
 # Constants
 TELEGRAM_STANDARD_API_FILE_LIMIT = 20 * 1024 * 1024  # 20MB for standard API
@@ -25,7 +31,9 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 # Initialize services
-transcription_service = GeminiTranscriptionService(settings.ai.gemini_api_key)
+transcription_service = GeminiTranscriptionService(
+    settings.ai.gemini_api_key, max_output_tokens=settings.ai.gemini_max_output_tokens
+)
 
 
 @router.message(F.text == "📎 Send Media")
@@ -50,16 +58,8 @@ async def request_media(message: Message, state: FSMContext):
     )
 
 
-@router.message(
-    TranscriptionStates.waiting_for_media,
-    AudioFilter()
-)
-async def process_audio(
-        message: Message,
-        state: FSMContext,
-        user,
-        wallet
-):
+@router.message(TranscriptionStates.waiting_for_media, AudioFilter())
+async def process_audio(message: Message, state: FSMContext, user, wallet):
     """Process audio file"""
     if message.audio:
         media_type = "audio"
@@ -78,16 +78,8 @@ async def process_audio(
     await process_media_file(message, state, user, wallet, media_type, duration, file_id, file_size)
 
 
-@router.message(
-    TranscriptionStates.waiting_for_media,
-    VideoFilter()
-)
-async def process_video(
-        message: Message,
-        state: FSMContext,
-        user,
-        wallet
-):
+@router.message(TranscriptionStates.waiting_for_media, VideoFilter())
+async def process_video(message: Message, state: FSMContext, user, wallet):
     """Process video file"""
     if message.video:
         media_type = "video"
@@ -109,7 +101,7 @@ async def process_media_file(
         media_type: str,
         duration: int,
         file_id: str,
-        file_size: int
+        file_size: int,
 ):
     """Common media processing logic"""
 
@@ -117,30 +109,36 @@ async def process_media_file(
     await state.clear()
 
     # Check if file is larger than 20MB
-    logger.info(f"File size check: {file_size} bytes, limit: {TELEGRAM_STANDARD_API_FILE_LIMIT} bytes")
+    logger.info(
+        f"File size check: {file_size} bytes, limit: {TELEGRAM_STANDARD_API_FILE_LIMIT} bytes"
+    )
     if file_size > TELEGRAM_STANDARD_API_FILE_LIMIT:
         logger.info(f"File is large, generating auth token for user {user.id}")
         # Generate one-time sign-in URL for large files
         auth_service = AuthService()
         token = await auth_service.generate_token(
-            user=user,
-            purpose="large_file_upload",
-            expires_in_hours=24  # Token valid for 24 hours
+            user=user, purpose="large_file_upload", expires_in_hours=24  # Token valid for 24 hours
         )
         logger.info(f"Token generated: {token.token}")
 
         # Get web app URL from settings (default to localhost for development)
-        web_app_url = settings.web_app_url if hasattr(settings, 'web_app_url') else "http://127.0.0.1:8000"
+        web_app_url = (
+            settings.web_app_url if hasattr(settings, "web_app_url") else "http://127.0.0.1:8000"
+        )
         sign_in_url = f"{web_app_url}/auth?token={token.token}"
 
         # In production, always use button. In development, check if URL is public
-        use_button = settings.is_production or not any(x in web_app_url.lower() for x in ['localhost', '127.0.0.1', '0.0.0.0'])
+        use_button = settings.is_production or not any(
+            x in web_app_url.lower() for x in ["localhost", "127.0.0.1", "0.0.0.0"]
+        )
 
         if use_button:
             # Create inline keyboard with sign-in button
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🌐 Open Web Interface", url=sign_in_url)]
-            ])
+            keyboard = InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [InlineKeyboardButton(text="🌐 Open Web Interface", url=sign_in_url)]
+                ]
+            )
 
             await message.answer(
                 "📦 <b>File Too Large for Direct Upload</b>\n\n"
@@ -150,7 +148,7 @@ async def process_media_file(
                 "Click the button below to access the web interface with a secure one-time login link. "
                 "Your profile and balance will be synchronized automatically.\n\n"
                 "⏰ <i>Link expires in 24 hours</i>",
-                reply_markup=keyboard
+                reply_markup=keyboard,
             )
         else:
             # Send link as text for localhost development
@@ -204,7 +202,9 @@ async def process_media_file(
         max_download_size_mb = max_download_size / 1024 / 1024
 
         if file_size > max_download_size:
-            api_type = "custom Bot API server" if settings.bot_api_server else "standard Telegram Bot API"
+            api_type = (
+                "custom Bot API server" if settings.bot_api_server else "standard Telegram Bot API"
+            )
             await processing_msg.edit_text(
                 f"❌ <b>File Too Large</b>\n\n"
                 f"File size: {file_size / 1024 / 1024:.2f} MB\n"
@@ -217,13 +217,11 @@ async def process_media_file(
         bot = message.bot
         file = await bot.get_file(file_id)
         file_io = await bot.download_file(file.file_path)
-        file_bytes = file_io.read() if hasattr(file_io, 'read') else file_io
+        file_bytes = file_io.read() if hasattr(file_io, "read") else file_io
 
         # Start transcription
         transcription_text = await transcription_service.transcribe_from_bytes(
-            file_bytes,
-            media_type,
-            duration
+            file_bytes, media_type, duration
         )
 
         if not transcription_text:
@@ -238,6 +236,7 @@ async def process_media_file(
         # Generate unique reference ID
         import uuid
         from datetime import datetime
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         unique_ref = f"transcription_{file_id}_{timestamp}_{str(uuid.uuid4())[:8]}"
 
@@ -246,7 +245,7 @@ async def process_media_file(
             user=user,
             amount=total_cost,
             description=f"Transcription of {media_type} ({duration // 60}:{duration % 60:02d})",
-            reference_id=unique_ref
+            reference_id=unique_ref,
         )
 
         if not deduct_result.success:
@@ -268,7 +267,7 @@ async def process_media_file(
                 duration_seconds=duration,
                 transcription_text=transcription_text,
                 cost=total_cost,
-                status="completed"
+                status="completed",
             )
 
         transcription = await save_transcription()
@@ -281,10 +280,7 @@ async def process_media_file(
         filename = f"transcription_{timestamp}.txt"
 
         await message.answer_document(
-            BufferedInputFile(
-                transcription_text.encode('utf-8'),
-                filename=filename
-            ),
+            BufferedInputFile(transcription_text.encode("utf-8"), filename=filename),
             caption=(
                 f"✅ <b>Transcription Complete!</b>\n\n"
                 f"📁 File: {filename}\n"
@@ -292,7 +288,7 @@ async def process_media_file(
                 f"💰 Cost: {total_cost:.2f} UZS\n"
                 f"💳 New Balance: {wallet.balance:.2f} UZS"
             ),
-            reply_markup=get_transcription_keyboard(str(transcription.id))
+            reply_markup=get_transcription_keyboard(str(transcription.id)),
         )
 
         # Delete processing message
@@ -301,14 +297,11 @@ async def process_media_file(
         # Ask for rating (simplified)
         await asyncio.sleep(2)
         await message.answer(
-            "⭐ <b>Rate this transcription</b>\n\n"
-            "How satisfied are you with the quality?",
+            "⭐ <b>Rate this transcription</b>\n\n" "How satisfied are you with the quality?",
             # reply_markup=get_rating_keyboard()  # Disabled for demo
         )
 
-        logger.info(
-            f"Transcription completed: {media_type}, {duration}s, cost: {total_cost}"
-        )
+        logger.info(f"Transcription completed: {media_type}, {duration}s, cost: {total_cost}")
 
     except Exception as e:
         logger.error(f"Error processing media: {e}", exc_info=True)
@@ -326,12 +319,35 @@ async def handle_rating(callback: CallbackQuery):
     rating_value = callback.data.split(":")[1]
 
     if rating_value == "skip":
-        await callback.message.edit_text(
-            "Thank you for using our service! 😊"
-        )
+        await callback.message.edit_text("Thank you for using our service! 😊")
     else:
         rating = int(rating_value)
-        # TODO: Save rating to database
+
+        # Save rating to database
+        try:
+            from asgiref.sync import sync_to_async
+
+            from bot.django_setup import Transcription
+
+            # Get the transcription from the message state or context
+            # For now, we'll update the most recent transcription for this user
+            transcription = await sync_to_async(
+                Transcription.objects.filter(
+                    user__telegram_id=callback.from_user.id, status="completed"
+                )
+                .order_by("-created_at")
+                .first
+            )()
+
+            if transcription:
+                transcription.user_rating = rating
+                await sync_to_async(transcription.save)()
+                logger.info(
+                    f"User {callback.from_user.id} rated transcription {transcription.id} with {rating} stars"
+                )
+
+        except Exception as e:
+            logger.error(f"Failed to save transcription rating: {e}")
 
         await callback.message.edit_text(
             f"Thank you for your feedback! {'⭐' * rating}\n\n"
@@ -351,10 +367,7 @@ async def download_transcription(callback: CallbackQuery, user, wallet):
         # Fetch transcription from database
         @sync_to_async
         def get_transcription():
-            return Transcription.objects.filter(
-                id=transcription_id,
-                user_id=user.id
-            ).first()
+            return Transcription.objects.filter(id=transcription_id, user_id=user.id).first()
 
         transcription = await get_transcription()
 
@@ -367,18 +380,16 @@ async def download_transcription(callback: CallbackQuery, user, wallet):
         def get_user_stats():
             total_transcriptions = Transcription.objects.filter(user_id=user.id).count()
             completed_transcriptions = Transcription.objects.filter(
-                user_id=user.id,
-                status='completed'
+                user_id=user.id, status="completed"
             ).count()
             total_spent = Transcription.objects.filter(
-                user_id=user.id,
-                status='completed'
-            ).aggregate(total=Sum('cost'))['total'] or Decimal('0.00')
+                user_id=user.id, status="completed"
+            ).aggregate(total=Sum("cost"))["total"] or Decimal("0.00")
 
             return {
-                'total_transcriptions': total_transcriptions,
-                'completed_transcriptions': completed_transcriptions,
-                'total_spent': total_spent
+                "total_transcriptions": total_transcriptions,
+                "completed_transcriptions": completed_transcriptions,
+                "total_spent": total_spent,
             }
 
         stats = await get_user_stats()
@@ -389,16 +400,20 @@ async def download_transcription(callback: CallbackQuery, user, wallet):
         # Prepare file information
         file_size_kb = transcription.file_size / 1024 if transcription.file_size else 0
         file_size_mb = file_size_kb / 1024
-        file_size_display = f"{file_size_mb:.2f} MB" if file_size_mb >= 1 else f"{file_size_kb:.2f} KB"
+        file_size_display = (
+            f"{file_size_mb:.2f} MB" if file_size_mb >= 1 else f"{file_size_kb:.2f} KB"
+        )
 
         # Generate filename with timestamp
         timestamp = transcription.created_at.strftime("%Y%m%d_%H%M%S")
         filename = transcription.file_name or f"transcription_{timestamp}.txt"
-        if not filename.endswith('.txt'):
+        if not filename.endswith(".txt"):
             filename = f"{filename.rsplit('.', 1)[0]}.txt"
 
         # Calculate word count
-        word_count = len(transcription.transcription_text.split()) if transcription.transcription_text else 0
+        word_count = (
+            len(transcription.transcription_text.split()) if transcription.transcription_text else 0
+        )
 
         # Format duration
         duration_min = transcription.duration_seconds // 60
@@ -407,10 +422,7 @@ async def download_transcription(callback: CallbackQuery, user, wallet):
 
         # Send transcription file with comprehensive information
         await callback.message.answer_document(
-            BufferedInputFile(
-                transcription.transcription_text.encode('utf-8'),
-                filename=filename
-            ),
+            BufferedInputFile(transcription.transcription_text.encode("utf-8"), filename=filename),
             caption=(
                 "📄 <b>Transcription Download</b>\n"
                 "━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -433,14 +445,16 @@ async def download_transcription(callback: CallbackQuery, user, wallet):
                 f"• Total Spent: {stats['total_spent']:.2f} UZS\n\n"
                 "✅ <b>File sent successfully to your profile!</b>\n"
                 "━━━━━━━━━━━━━━━━━━━━"
-            )
+            ),
         )
 
         logger.info(f"Transcription {transcription_id} downloaded by user {user.id}")
 
     except Exception as e:
         logger.error(f"Error downloading transcription: {e}", exc_info=True)
-        await callback.answer("❌ Error downloading transcription. Please try again later.", show_alert=True)
+        await callback.answer(
+            "❌ Error downloading transcription. Please try again later.", show_alert=True
+        )
 
 
 # Handle media sent without command
@@ -450,10 +464,37 @@ async def handle_direct_media(message: Message, state: FSMContext, user, wallet)
     """Handle media sent directly without using menu"""
     # Extract media info
     if message.audio:
-        await process_media_file(message, state, user, wallet, "audio", message.audio.duration, message.audio.file_id, message.audio.file_size)
+        await process_media_file(
+            message,
+            state,
+            user,
+            wallet,
+            "audio",
+            message.audio.duration,
+            message.audio.file_id,
+            message.audio.file_size,
+        )
     elif message.voice:
-        await process_media_file(message, state, user, wallet, "audio", message.voice.duration, message.voice.file_id, message.voice.file_size)
+        await process_media_file(
+            message,
+            state,
+            user,
+            wallet,
+            "audio",
+            message.voice.duration,
+            message.voice.file_id,
+            message.voice.file_size,
+        )
     elif message.video:
-        await process_media_file(message, state, user, wallet, "video", message.video.duration, message.video.file_id, message.video.file_size)
+        await process_media_file(
+            message,
+            state,
+            user,
+            wallet,
+            "video",
+            message.video.duration,
+            message.video.file_id,
+            message.video.file_size,
+        )
     else:
         await message.answer("❌ Unsupported media type.")

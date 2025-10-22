@@ -1,9 +1,9 @@
-from typing import Callable, Dict, Any, Awaitable
-from datetime import datetime
-from aiogram import BaseMiddleware
-from aiogram.types import TelegramObject, Message, CallbackQuery
 import logging
 import time
+from typing import Any, Awaitable, Callable, Dict
+
+from aiogram import BaseMiddleware
+from aiogram.types import CallbackQuery, Message, TelegramObject
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ class LoggingMiddleware(BaseMiddleware):
             self,
             handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
             event: TelegramObject,
-            data: Dict[str, Any]
+            data: Dict[str, Any],
     ) -> Any:
         start_time = time.time()
 
@@ -28,9 +28,7 @@ class LoggingMiddleware(BaseMiddleware):
             )
         elif isinstance(event, CallbackQuery):
             user = event.from_user
-            logger.info(
-                f"Callback from {user.id} (@{user.username}): {event.data}"
-            )
+            logger.info(f"Callback from {user.id} (@{user.username}): {event.data}")
 
         try:
             # Process update
@@ -47,9 +45,5 @@ class LoggingMiddleware(BaseMiddleware):
 
         except Exception as e:
             # Log errors
-            logger.error(
-                f"Error processing {type(event).__name__}: {str(e)}",
-                exc_info=True
-            )
+            logger.error(f"Error processing {type(event).__name__}: {str(e)}", exc_info=True)
             raise
-        

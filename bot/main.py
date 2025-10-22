@@ -1,14 +1,10 @@
 import asyncio
 import logging
 import sys
-import os
 from pathlib import Path
 
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
-
-# Initialize Django
-from bot.django_setup import *
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
@@ -16,38 +12,34 @@ from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.telegram import TelegramAPIServer
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
-# from aiogram.fsm.storage.redis import RedisStorage
-# from redis.asyncio import Redis
 
 from bot.config import settings
-from bot.handlers import (
-    start,
-    media,
-    balance,
-    payment,
-    # wallet,
-    # history,
-    # admin,  # Commented out - needs Django ORM refactoring
-    errors
-)
+
+# Initialize Django
 from bot.handlers import webapp  # Import webapp handler
-from bot.middlewares import (
-    DatabaseMiddleware,
+from bot.handlers import (  # wallet,; history,; admin,  # Commented out - needs Django ORM refactoring
+    balance,
+    errors,
+    media,
+    payment,
+    start,
+)
+from bot.middlewares import (  # ThrottlingMiddleware,; LoggingMiddleware,; BalanceCheckMiddleware
     AuthMiddleware,
-    # ThrottlingMiddleware,
-    # LoggingMiddleware,
-    # BalanceCheckMiddleware
+    DatabaseMiddleware,
 )
 from bot.utils.commands import set_bot_commands
 from bot.utils.notifications import notify_admins_on_startup
 
+# from aiogram.fsm.storage.redis import RedisStorage
+# from redis.asyncio import Redis
+
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
 
@@ -109,17 +101,12 @@ async def main():
             bot = Bot(
                 token=settings.bot_token,
                 session=session,
-                default=DefaultBotProperties(
-                    parse_mode=ParseMode.HTML
-                )
+                default=DefaultBotProperties(parse_mode=ParseMode.HTML),
             )
         else:
             logger.info("Using standard Telegram Bot API")
             bot = Bot(
-                token=settings.bot_token,
-                default=DefaultBotProperties(
-                    parse_mode=ParseMode.HTML
-                )
+                token=settings.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML)
             )
 
         # Initialize dispatcher
@@ -161,7 +148,7 @@ async def main():
         await dp.start_polling(
             bot,
             allowed_updates=dp.resolve_used_update_types(),
-            drop_pending_updates=settings.drop_pending_updates
+            drop_pending_updates=settings.drop_pending_updates,
         )
 
     except Exception as e:
@@ -172,7 +159,7 @@ async def main():
 if __name__ == "__main__":
     try:
         # Fix for Windows event loop issue with aiodns
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
         asyncio.run(main())

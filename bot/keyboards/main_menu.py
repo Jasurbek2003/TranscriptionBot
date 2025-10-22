@@ -1,5 +1,6 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
+
 from bot.config import settings
 
 
@@ -10,25 +11,13 @@ def get_main_menu(is_admin: bool = False, include_webapp: bool = True) -> ReplyK
     # Webapp button (optional)
     if include_webapp:
         builder.row(
-            KeyboardButton(
-                text="🌐 Open Web App",
-                web_app=WebAppInfo(url=settings.webapp_url)
-            )
+            KeyboardButton(text="🌐 Open Web App", web_app=WebAppInfo(url=settings.webapp_url))
         )
 
     # Main buttons
-    builder.row(
-        KeyboardButton(text="📎 Send Media"),
-        KeyboardButton(text="💰 My Balance")
-    )
-    builder.row(
-        KeyboardButton(text="💳 Top Up"),
-        KeyboardButton(text="📊 History")
-    )
-    builder.row(
-        KeyboardButton(text="⚙️ Settings"),
-        KeyboardButton(text="ℹ️ Help")
-    )
+    builder.row(KeyboardButton(text="📎 Send Media"), KeyboardButton(text="💰 My Balance"))
+    builder.row(KeyboardButton(text="💳 Top Up"), KeyboardButton(text="📊 History"))
+    builder.row(KeyboardButton(text="⚙️ Settings"), KeyboardButton(text="ℹ️ Help"))
 
     # Admin button
     if is_admin:
@@ -54,8 +43,5 @@ def get_back_keyboard() -> ReplyKeyboardMarkup:
 def get_confirm_keyboard() -> ReplyKeyboardMarkup:
     """Get confirmation keyboard"""
     builder = ReplyKeyboardBuilder()
-    builder.row(
-        KeyboardButton(text="✅ Confirm"),
-        KeyboardButton(text="❌ Cancel")
-    )
+    builder.row(KeyboardButton(text="✅ Confirm"), KeyboardButton(text="❌ Cancel"))
     return builder.as_markup(resize_keyboard=True)

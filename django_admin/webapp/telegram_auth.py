@@ -6,19 +6,20 @@ This module provides utilities for validating and authenticating users
 from Telegram WebApp (Mini App) using initData.
 """
 
-import hmac
 import hashlib
+import hmac
 import json
 import logging
+from datetime import datetime
+from typing import Any, Dict, Optional
 from urllib.parse import parse_qsl
-from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
-from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
 
-def validate_telegram_webapp_data(init_data: str, bot_token: str, max_age_seconds: int = 3600) -> Optional[Dict[str, Any]]:
+def validate_telegram_webapp_data(
+        init_data: str, bot_token: str, max_age_seconds: int = 3600
+) -> Optional[Dict[str, Any]]:
     """
     Validate Telegram WebApp initData
 
@@ -42,13 +43,13 @@ def validate_telegram_webapp_data(init_data: str, bot_token: str, max_age_second
             return None
 
         # Check if hash exists
-        received_hash = parsed_data.pop('hash', None)
+        received_hash = parsed_data.pop("hash", None)
         if not received_hash:
             logger.warning("No hash in initData")
             return None
 
         # Check auth_date
-        auth_date = parsed_data.get('auth_date')
+        auth_date = parsed_data.get("auth_date")
         if not auth_date:
             logger.warning("No auth_date in initData")
             return None
@@ -69,22 +70,18 @@ def validate_telegram_webapp_data(init_data: str, bot_token: str, max_age_second
         # Create data check string
         # Sort keys alphabetically and create key=value string
         data_check_arr = [f"{k}={v}" for k, v in sorted(parsed_data.items())]
-        data_check_string = '\n'.join(data_check_arr)
+        data_check_string = "\n".join(data_check_arr)
 
         # Calculate secret key
         # secret_key = HMAC_SHA256(<bot_token>, "WebAppData")
         secret_key = hmac.new(
-            key="WebAppData".encode(),
-            msg=bot_token.encode(),
-            digestmod=hashlib.sha256
+            key="WebAppData".encode(), msg=bot_token.encode(), digestmod=hashlib.sha256
         ).digest()
 
         # Calculate hash
         # hash = HMAC_SHA256(<secret_key>, <data_check_string>)
         calculated_hash = hmac.new(
-            key=secret_key,
-            msg=data_check_string.encode(),
-            digestmod=hashlib.sha256
+            key=secret_key, msg=data_check_string.encode(), digestmod=hashlib.sha256
         ).hexdigest()
 
         # Compare hashes
@@ -93,14 +90,16 @@ def validate_telegram_webapp_data(init_data: str, bot_token: str, max_age_second
             return None
 
         # Parse user data if present
-        if 'user' in parsed_data:
+        if "user" in parsed_data:
             try:
-                parsed_data['user'] = json.loads(parsed_data['user'])
+                parsed_data["user"] = json.loads(parsed_data["user"])
             except json.JSONDecodeError:
                 logger.warning("Failed to parse user data from initData")
                 return None
 
-        logger.info(f"Successfully validated Telegram WebApp data for user: {parsed_data.get('user', {}).get('id')}")
+        logger.info(
+            f"Successfully validated Telegram WebApp data for user: {parsed_data.get('user', {}).get('id')}"
+        )
         return parsed_data
 
     except Exception as e:
@@ -118,22 +117,24 @@ def extract_user_from_init_data(validated_data: Dict[str, Any]) -> Optional[Dict
     Returns:
         User data dict with keys: telegram_id, first_name, last_name, username, language_code
     """
-    if not validated_data or 'user' not in validated_data:
+    if not validated_data or "user" not in validated_data:
         return None
 
-    user_data = validated_data['user']
+    user_data = validated_data["user"]
 
     return {
-        'telegram_id': user_data.get('id'),
-        'first_name': user_data.get('first_name', ''),
-        'last_name': user_data.get('last_name', ''),
-        'username': user_data.get('username', ''),
-        'language_code': user_data.get('language_code', 'en'),
-        'is_premium': user_data.get('is_premium', False),
+        "telegram_id": user_data.get("id"),
+        "first_name": user_data.get("first_name", ""),
+        "last_name": user_data.get("last_name", ""),
+        "username": user_data.get("username", ""),
+        "language_code": user_data.get("language_code", "en"),
+        "is_premium": user_data.get("is_premium", False),
     }
 
 
-def create_telegram_auth_response(success: bool, message: str = "", user_data: Optional[Dict] = None) -> Dict[str, Any]:
+def create_telegram_auth_response(
+        success: bool, message: str = "", user_data: Optional[Dict] = None
+) -> Dict[str, Any]:
     """
     Create a standardized response for Telegram auth endpoints
 
@@ -146,14 +147,14 @@ def create_telegram_auth_response(success: bool, message: str = "", user_data: O
         Response dict
     """
     response = {
-        'success': success,
-        'authenticated': success,
+        "success": success,
+        "authenticated": success,
     }
 
     if message:
-        response['message'] = message
+        response["message"] = message
 
     if user_data:
-        response['user'] = user_data
+        response["user"] = user_data
 
     return response

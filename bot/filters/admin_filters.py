@@ -1,6 +1,8 @@
-from typing import Union, List
+from typing import List, Union
+
 from aiogram.filters import Filter
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import CallbackQuery, Message
+
 from bot.config import settings
 
 

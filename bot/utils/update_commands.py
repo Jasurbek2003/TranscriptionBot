@@ -11,12 +11,12 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from bot.django_setup import *
+import logging
 
 from aiogram import Bot
-from bot.utils.commands import set_bot_commands
+
 from bot.config import settings
-import logging
+from bot.utils.commands import set_bot_commands
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -39,6 +39,7 @@ async def update_bot_commands():
 
         # List the commands
         from aiogram.types import BotCommandScopeDefault
+
         commands = await bot.get_my_commands(scope=BotCommandScopeDefault())
 
         logger.info("\n📝 Available commands:")

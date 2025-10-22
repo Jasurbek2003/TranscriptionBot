@@ -8,12 +8,12 @@ def validate_phone_number(phone: str) -> Optional[str]:
     Returns formatted phone number or None if invalid
     """
     # Remove all non-digit characters
-    phone = re.sub(r'\D', '', phone)
+    phone = re.sub(r"\D", "", phone)
 
     # Check if it's a valid Uzbek phone number
-    if re.match(r'^998\d{9}', phone):
+    if re.match(r"^998\d{9}", phone):
         return f"+{phone}"
-    elif re.match(r'^\d{9}', phone):
+    elif re.match(r"^\d{9}", phone):
         return f"+998{phone}"
 
     return None
@@ -25,7 +25,7 @@ def validate_amount(amount: str) -> Optional[float]:
     Returns float amount or None if invalid
     """
     try:
-        amount = amount.replace(',', '').replace(' ', '')
+        amount = amount.replace(",", "").replace(" ", "")
         amount_float = float(amount)
 
         if amount_float <= 0:
@@ -40,7 +40,7 @@ def validate_card_number(card: str) -> bool:
     """
     Validate card number using Luhn algorithm
     """
-    card = re.sub(r'\D', '', card)
+    card = re.sub(r"\D", "", card)
 
     if len(card) < 13 or len(card) > 19:
         return False

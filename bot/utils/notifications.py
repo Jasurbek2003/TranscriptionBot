@@ -1,6 +1,7 @@
-from aiogram import Bot
-from typing import List
 import logging
+from typing import List
+
+from aiogram import Bot
 
 logger = logging.getLogger(__name__)
 
@@ -19,10 +20,7 @@ async def notify_admins_on_startup(bot: Bot, admin_ids: List[int]):
 
     for admin_id in admin_ids:
         try:
-            await bot.send_message(
-                chat_id=admin_id,
-                text=message
-            )
+            await bot.send_message(chat_id=admin_id, text=message)
             logger.info(f"Notified admin {admin_id} about startup")
         except Exception as e:
             logger.error(f"Failed to notify admin {admin_id}: {e}")
@@ -39,10 +37,6 @@ async def notify_admins_on_error(bot: Bot, admin_ids: List[int], error: Exceptio
 
     for admin_id in admin_ids:
         try:
-            await bot.send_message(
-                chat_id=admin_id,
-                text=message
-            )
+            await bot.send_message(chat_id=admin_id, text=message)
         except Exception as e:
             logger.error(f"Failed to notify admin {admin_id} about error: {e}")
-

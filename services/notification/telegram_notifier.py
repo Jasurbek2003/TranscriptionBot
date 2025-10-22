@@ -1,30 +1,31 @@
 import asyncio
 import logging
-from typing import Optional, List, Dict, Any, Union
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional, Union
 
 from aiogram import Bot
-from aiogram.types import (
-    InlineKeyboardMarkup,
-    InlineKeyboardButton,
-    ReplyKeyboardMarkup,
-    FSInputFile,
-    BufferedInputFile
-)
+from aiogram.enums import ParseMode
 from aiogram.exceptions import (
     TelegramBadRequest,
+    TelegramForbiddenError,
     TelegramNotFound,
     TelegramRetryAfter,
-    TelegramForbiddenError
 )
-from aiogram.enums import ParseMode
+from aiogram.types import (
+    BufferedInputFile,
+    FSInputFile,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    ReplyKeyboardMarkup,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class NotificationPriority(Enum):
     """Notification priority levels"""
+
     LOW = "low"
     NORMAL = "normal"
     HIGH = "high"
@@ -33,6 +34,7 @@ class NotificationPriority(Enum):
 
 class NotificationStatus(Enum):
     """Notification delivery status"""
+
     PENDING = "pending"
     SENT = "sent"
     FAILED = "failed"
@@ -59,7 +61,7 @@ class TelegramNotifier:
             NotificationPriority.LOW: [5, 10, 30],
             NotificationPriority.NORMAL: [3, 8, 20],
             NotificationPriority.HIGH: [2, 5, 10],
-            NotificationPriority.URGENT: [1, 3, 5]
+            NotificationPriority.URGENT: [1, 3, 5],
         }
 
     async def send_text_message(
@@ -70,7 +72,7 @@ class TelegramNotifier:
             disable_notification: bool = False,
             reply_markup: Optional[Union[InlineKeyboardMarkup, ReplyKeyboardMarkup]] = None,
             disable_web_page_preview: bool = True,
-            priority: NotificationPriority = NotificationPriority.NORMAL
+            priority: NotificationPriority = NotificationPriority.NORMAL,
     ) -> Dict[str, Any]:
         """
         Send a text message to a user.
@@ -96,7 +98,7 @@ class TelegramNotifier:
                 parse_mode=parse_mode,
                 disable_notification=disable_notification,
                 reply_markup=reply_markup,
-                disable_web_page_preview=disable_web_page_preview
+                disable_web_page_preview=disable_web_page_preview,
             )
 
             logger.info(f"Message sent successfully to {chat_id}")
@@ -104,7 +106,7 @@ class TelegramNotifier:
                 "status": NotificationStatus.SENT,
                 "message_id": message.message_id,
                 "chat_id": chat_id,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
         except TelegramForbiddenError:
@@ -113,7 +115,7 @@ class TelegramNotifier:
                 "status": NotificationStatus.FAILED,
                 "error": "User blocked bot",
                 "chat_id": chat_id,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
         except TelegramNotFound:
@@ -122,15 +124,20 @@ class TelegramNotifier:
                 "status": NotificationStatus.FAILED,
                 "error": "Chat not found",
                 "chat_id": chat_id,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
         except TelegramRetryAfter as e:
             logger.warning(f"Rate limited. Retry after {e.retry_after} seconds")
             await asyncio.sleep(e.retry_after)
             return await self.send_text_message(
-                chat_id, text, parse_mode, disable_notification,
-                reply_markup, disable_web_page_preview, priority
+                chat_id,
+                text,
+                parse_mode,
+                disable_notification,
+                reply_markup,
+                disable_web_page_preview,
+                priority,
             )
 
         except Exception as e:
@@ -139,7 +146,7 @@ class TelegramNotifier:
                 "status": NotificationStatus.FAILED,
                 "error": str(e),
                 "chat_id": chat_id,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
     async def send_document(
@@ -150,7 +157,7 @@ class TelegramNotifier:
             parse_mode: Optional[ParseMode] = None,
             disable_notification: bool = False,
             reply_markup: Optional[InlineKeyboardMarkup] = None,
-            thumbnail: Optional[Union[FSInputFile, BufferedInputFile, str]] = None
+            thumbnail: Optional[Union[FSInputFile, BufferedInputFile, str]] = None,
     ) -> Dict[str, Any]:
         """
         Send a document to a user.
@@ -177,7 +184,7 @@ class TelegramNotifier:
                 parse_mode=parse_mode,
                 disable_notification=disable_notification,
                 reply_markup=reply_markup,
-                thumbnail=thumbnail
+                thumbnail=thumbnail,
             )
 
             logger.info(f"Document sent successfully to {chat_id}")
@@ -186,7 +193,7 @@ class TelegramNotifier:
                 "message_id": message.message_id,
                 "document_id": message.document.file_id,
                 "chat_id": chat_id,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
         except Exception as e:
@@ -195,7 +202,7 @@ class TelegramNotifier:
                 "status": NotificationStatus.FAILED,
                 "error": str(e),
                 "chat_id": chat_id,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
     async def send_transcription_ready(
@@ -204,7 +211,7 @@ class TelegramNotifier:
             transcription_id: str,
             duration_seconds: int,
             cost: float,
-            file_type: str = "audio"
+            file_type: str = "audio",
     ) -> Dict[str, Any]:
         """
         Send notification that transcription is ready.
@@ -230,24 +237,17 @@ class TelegramNotifier:
             "Your transcription file will be sent shortly."
         )
 
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="📄 View History",
-                    callback_data=f"history"
-                ),
-                InlineKeyboardButton(
-                    text="💳 Check Balance",
-                    callback_data=f"balance"
-                )
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="📄 View History", callback_data=f"history"),
+                    InlineKeyboardButton(text="💳 Check Balance", callback_data=f"balance"),
+                ]
             ]
-        ])
+        )
 
         return await self.send_text_message(
-            chat_id=chat_id,
-            text=text,
-            reply_markup=keyboard,
-            priority=NotificationPriority.HIGH
+            chat_id=chat_id, text=text, reply_markup=keyboard, priority=NotificationPriority.HIGH
         )
 
     async def send_payment_confirmation(
@@ -256,7 +256,7 @@ class TelegramNotifier:
             amount: float,
             payment_method: str,
             transaction_id: str,
-            new_balance: float
+            new_balance: float,
     ) -> Dict[str, Any]:
         """
         Send payment confirmation notification.
@@ -280,20 +280,14 @@ class TelegramNotifier:
             "Thank you for your payment!"
         )
 
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="📊 Transaction History",
-                    callback_data="transactions"
-                )
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="📊 Transaction History", callback_data="transactions")]
             ]
-        ])
+        )
 
         return await self.send_text_message(
-            chat_id=chat_id,
-            text=text,
-            reply_markup=keyboard,
-            priority=NotificationPriority.HIGH
+            chat_id=chat_id, text=text, reply_markup=keyboard, priority=NotificationPriority.HIGH
         )
 
     async def send_insufficient_balance(
@@ -301,7 +295,7 @@ class TelegramNotifier:
             chat_id: Union[int, str],
             current_balance: float,
             required_amount: float,
-            media_duration_seconds: int
+            media_duration_seconds: int,
     ) -> Dict[str, Any]:
         """
         Send insufficient balance notification.
@@ -328,24 +322,17 @@ class TelegramNotifier:
             "Please top up your balance to continue."
         )
 
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="💳 Top Up Balance",
-                    callback_data="topup"
-                ),
-                InlineKeyboardButton(
-                    text="💰 Check Balance",
-                    callback_data="balance"
-                )
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="💳 Top Up Balance", callback_data="topup"),
+                    InlineKeyboardButton(text="💰 Check Balance", callback_data="balance"),
+                ]
             ]
-        ])
+        )
 
         return await self.send_text_message(
-            chat_id=chat_id,
-            text=text,
-            reply_markup=keyboard,
-            priority=NotificationPriority.NORMAL
+            chat_id=chat_id, text=text, reply_markup=keyboard, priority=NotificationPriority.NORMAL
         )
 
     async def send_error_notification(
@@ -353,7 +340,7 @@ class TelegramNotifier:
             chat_id: Union[int, str],
             error_type: str,
             error_message: str,
-            support_contact: Optional[str] = None
+            support_contact: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Send error notification to user.
@@ -378,24 +365,17 @@ class TelegramNotifier:
         else:
             text += "Please try again later or contact support if the issue persists."
 
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="🔄 Try Again",
-                    callback_data="retry"
-                ),
-                InlineKeyboardButton(
-                    text="📞 Support",
-                    callback_data="support"
-                )
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="🔄 Try Again", callback_data="retry"),
+                    InlineKeyboardButton(text="📞 Support", callback_data="support"),
+                ]
             ]
-        ])
+        )
 
         return await self.send_text_message(
-            chat_id=chat_id,
-            text=text,
-            reply_markup=keyboard,
-            priority=NotificationPriority.HIGH
+            chat_id=chat_id, text=text, reply_markup=keyboard, priority=NotificationPriority.HIGH
         )
 
     async def send_bulk_notification(
@@ -404,7 +384,7 @@ class TelegramNotifier:
             text: str,
             parse_mode: Optional[ParseMode] = None,
             disable_notification: bool = True,
-            priority: NotificationPriority = NotificationPriority.LOW
+            priority: NotificationPriority = NotificationPriority.LOW,
     ) -> Dict[str, Any]:
         """
         Send notification to multiple users.
@@ -419,12 +399,7 @@ class TelegramNotifier:
         Returns:
             Dict with success/failure counts
         """
-        results = {
-            "total": len(chat_ids),
-            "success": 0,
-            "failed": 0,
-            "failures": []
-        }
+        results = {"total": len(chat_ids), "success": 0, "failed": 0, "failures": []}
 
         for chat_id in chat_ids:
             result = await self.send_text_message(
@@ -432,17 +407,16 @@ class TelegramNotifier:
                 text=text,
                 parse_mode=parse_mode,
                 disable_notification=disable_notification,
-                priority=priority
+                priority=priority,
             )
 
             if result["status"] == NotificationStatus.SENT:
                 results["success"] += 1
             else:
                 results["failed"] += 1
-                results["failures"].append({
-                    "chat_id": chat_id,
-                    "error": result.get("error", "Unknown error")
-                })
+                results["failures"].append(
+                    {"chat_id": chat_id, "error": result.get("error", "Unknown error")}
+                )
 
             # Small delay to avoid rate limiting
             await asyncio.sleep(0.05)
@@ -457,7 +431,7 @@ class TelegramNotifier:
             chat_ids: List[Union[int, str]],
             start_time: datetime,
             end_time: datetime,
-            reason: Optional[str] = None
+            reason: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Send maintenance notification to users.
@@ -486,7 +460,7 @@ class TelegramNotifier:
             chat_ids=chat_ids,
             text=text,
             disable_notification=False,
-            priority=NotificationPriority.HIGH
+            priority=NotificationPriority.HIGH,
         )
 
     async def edit_message(
@@ -495,7 +469,7 @@ class TelegramNotifier:
             message_id: int,
             text: str,
             parse_mode: Optional[ParseMode] = None,
-            reply_markup: Optional[InlineKeyboardMarkup] = None
+            reply_markup: Optional[InlineKeyboardMarkup] = None,
     ) -> bool:
         """
         Edit an existing message.
@@ -518,7 +492,7 @@ class TelegramNotifier:
                 message_id=message_id,
                 text=text,
                 parse_mode=parse_mode,
-                reply_markup=reply_markup
+                reply_markup=reply_markup,
             )
             return True
         except TelegramBadRequest as e:
@@ -531,11 +505,7 @@ class TelegramNotifier:
             logger.error(f"Failed to edit message: {str(e)}")
             return False
 
-    async def delete_message(
-            self,
-            chat_id: Union[int, str],
-            message_id: int
-    ) -> bool:
+    async def delete_message(self, chat_id: Union[int, str], message_id: int) -> bool:
         """
         Delete a message.
 
@@ -547,10 +517,7 @@ class TelegramNotifier:
             True if successful, False otherwise
         """
         try:
-            await self.bot.delete_message(
-                chat_id=chat_id,
-                message_id=message_id
-            )
+            await self.bot.delete_message(chat_id=chat_id, message_id=message_id)
             return True
         except Exception as e:
             logger.error(f"Failed to delete message: {str(e)}")
@@ -562,7 +529,7 @@ class TelegramNotifier:
             text: Optional[str] = None,
             show_alert: bool = False,
             url: Optional[str] = None,
-            cache_time: int = 0
+            cache_time: int = 0,
     ) -> bool:
         """
         Answer a callback query.
@@ -583,7 +550,7 @@ class TelegramNotifier:
                 text=text,
                 show_alert=show_alert,
                 url=url,
-                cache_time=cache_time
+                cache_time=cache_time,
             )
             return True
         except Exception as e:

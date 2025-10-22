@@ -5,6 +5,7 @@ This guide shows you how to create payments using the Payme payment gateway.
 ## Overview
 
 The payment process has two parts:
+
 1. **Frontend (Bot)**: Creates transaction and payment link
 2. **Backend (Django)**: Handles webhook callbacks from Payme
 
@@ -27,11 +28,13 @@ User enters amount (e.g., 10000 UZS)
 ### Step 4: Bot Creates Payment
 
 The bot automatically:
+
 1. Creates a pending transaction in database
 2. Generates Payme payment link
 3. Sends link to user
 
 **Code** (already implemented in `bot/handlers/payment.py`):
+
 ```python
 # This is already done for you!
 payment_service = PaymeService(
@@ -62,6 +65,7 @@ User clicks link and pays on Payme's website
 ### Step 6: Automatic Verification
 
 Payme sends webhook to your server:
+
 - URL: `https://yourdomain.com/api/transactions/webhooks/payme/`
 - The webhook handler automatically verifies and completes the transaction
 
@@ -121,6 +125,7 @@ print(f"Payment URL: {payment_url}")
 ### Step 3: Send Link to User
 
 Send the `payment_url` to your user via:
+
 - Telegram message with inline button
 - SMS
 - Email
@@ -141,11 +146,13 @@ Send the `payment_url` to your user via:
 ## Payment Link Format
 
 The generated payment link looks like:
+
 ```
 https://checkout.paycom.uz?m=MERCHANT_ID&a=1000000&ac.order_id=TRANSACTION_ID
 ```
 
 Parameters:
+
 - `m` - Merchant ID
 - `a` - Amount in **tiyin** (1 UZS = 100 tiyin, so 10000 UZS = 1000000 tiyin)
 - `ac.order_id` - Your transaction reference ID
@@ -157,9 +164,11 @@ Parameters:
 Your webhook handler at `/api/transactions/webhooks/payme/` handles these JSON-RPC methods:
 
 ### 1. CheckPerformTransaction
+
 **Purpose**: Verify if transaction can be performed
 
 **Request from Payme**:
+
 ```json
 {
   "method": "CheckPerformTransaction",
@@ -174,6 +183,7 @@ Your webhook handler at `/api/transactions/webhooks/payme/` handles these JSON-R
 ```
 
 **Your Response**:
+
 ```json
 {
   "result": {
@@ -184,9 +194,11 @@ Your webhook handler at `/api/transactions/webhooks/payme/` handles these JSON-R
 ```
 
 ### 2. CreateTransaction
+
 **Purpose**: Create and reserve transaction
 
 **Request from Payme**:
+
 ```json
 {
   "method": "CreateTransaction",
@@ -203,6 +215,7 @@ Your webhook handler at `/api/transactions/webhooks/payme/` handles these JSON-R
 ```
 
 **Your Response**:
+
 ```json
 {
   "result": {
@@ -215,9 +228,11 @@ Your webhook handler at `/api/transactions/webhooks/payme/` handles these JSON-R
 ```
 
 ### 3. PerformTransaction
+
 **Purpose**: Complete the payment
 
 **Request from Payme**:
+
 ```json
 {
   "method": "PerformTransaction",
@@ -229,6 +244,7 @@ Your webhook handler at `/api/transactions/webhooks/payme/` handles these JSON-R
 ```
 
 **Your Response**:
+
 ```json
 {
   "result": {
@@ -241,14 +257,17 @@ Your webhook handler at `/api/transactions/webhooks/payme/` handles these JSON-R
 ```
 
 At this point:
+
 - ✅ Wallet balance is increased
 - ✅ Transaction status changed to "completed"
 - ✅ User is notified (you should implement this)
 
 ### 4. CancelTransaction
+
 **Purpose**: Cancel or refund payment
 
 **Request from Payme**:
+
 ```json
 {
   "method": "CancelTransaction",
@@ -261,6 +280,7 @@ At this point:
 ```
 
 **Your Response**:
+
 ```json
 {
   "result": {
@@ -279,12 +299,14 @@ At this point:
 ### Test Environment
 
 Set in `.env`:
+
 ```env
 PAYME_MERCHANT_ID=your_test_merchant_id
 PAYME_SECRET_KEY=your_test_secret_key
 ```
 
 In Django settings:
+
 ```python
 PAYME_MERCHANT_ID = env.str('PAYME_MERCHANT_ID')
 PAYME_SECRET_KEY = env.str('PAYME_SECRET_KEY')
@@ -319,6 +341,7 @@ ngrok http 8000
 ```
 
 Then configure your Payme merchant dashboard with:
+
 ```
 https://your-ngrok-url.ngrok.io/api/transactions/webhooks/payme/
 ```
@@ -455,20 +478,24 @@ await bot.send_message(
 ## Troubleshooting
 
 ### Payment link doesn't work
+
 - Check merchant ID and secret key
 - Verify test_mode setting matches your credentials
 
 ### Webhook not receiving calls
+
 - Check URL is accessible from internet (use ngrok for local testing)
 - Verify webhook URL configured in Payme dashboard
 - Check Basic Auth credentials are correct
 
 ### Transaction not completing
+
 - Check webhook logs in Django
 - Verify transaction exists with correct reference_id
 - Check amount matches exactly
 
 ### Authentication failed
+
 - Verify Authorization header format: `Basic base64(Paycom:SECRET_KEY)`
 - Check secret key is correct
 

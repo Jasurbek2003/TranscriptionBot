@@ -1,12 +1,13 @@
+import logging
+
 from aiogram import Router
-from aiogram.types import ErrorEvent
 from aiogram.exceptions import (
     TelegramBadRequest,
+    TelegramForbiddenError,
     TelegramNotFound,
     TelegramRetryAfter,
-    TelegramForbiddenError
 )
-import logging
+from aiogram.types import ErrorEvent
 
 logger = logging.getLogger(__name__)
 
@@ -33,16 +34,16 @@ async def error_handler(event: ErrorEvent):
     if event.update.message:
         try:
             await event.update.message.answer(
-                "❌ An error occurred while processing your request. "
-                "Please try again later."
+                "❌ An error occurred while processing your request. " "Please try again later."
             )
-        except:
-            pass
+        except Exception as e:
+            # Last resort error handler - log but don't raise
+            logger.error(f"Failed to send error message to user: {e}")
     elif event.update.callback_query:
         try:
             await event.update.callback_query.answer(
-                "❌ An error occurred. Please try again.",
-                show_alert=True
+                "❌ An error occurred. Please try again.", show_alert=True
             )
-        except:
-            pass
+        except Exception as e:
+            # Last resort error handler - log but don't raise
+            logger.error(f"Failed to send error callback to user: {e}")

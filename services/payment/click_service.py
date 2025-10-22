@@ -4,11 +4,11 @@ Click Uzbekistan payment system integration using SHOP API.
 Official Documentation: https://docs.click.uz/
 """
 
-from typing import Dict, Any, Optional
 import hashlib
 import logging
-from urllib.parse import urlencode
 import time
+from typing import Any, Dict, Optional
+from urllib.parse import urlencode
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +36,12 @@ class ClickService:
     }
 
     def __init__(
-        self,
-        merchant_id: str,
-        service_id: str,
-        secret_key: str,
-        merchant_user_id: str = None,
-        test_mode: bool = True
+            self,
+            merchant_id: str,
+            service_id: str,
+            secret_key: str,
+            merchant_user_id: str = None,
+            test_mode: bool = True,
     ):
         """Initialize Click service.
 
@@ -67,10 +67,7 @@ class ClickService:
         self.api_url = "https://api.click.uz/v2/merchant"
 
     def create_payment_link(
-        self,
-        amount: float,
-        order_id: str,
-        return_url: Optional[str] = None
+            self, amount: float, order_id: str, return_url: Optional[str] = None
     ) -> str:
         """Create a payment link for user to complete payment.
 
@@ -96,8 +93,7 @@ class ClickService:
             payment_url = f"{self.checkout_url}?{urlencode(params)}"
 
             logger.info(
-                f"Created Click payment link for order {order_id}, "
-                f"amount: {amount} UZS"
+                f"Created Click payment link for order {order_id}, " f"amount: {amount} UZS"
             )
             return payment_url
 
@@ -106,15 +102,15 @@ class ClickService:
             return ""
 
     def verify_signature(
-        self,
-        click_trans_id: str,
-        service_id: str,
-        merchant_trans_id: str,
-        amount: str,
-        action: str,
-        sign_time: str,
-        sign_string: str,
-        merchant_prepare_id: str = None
+            self,
+            click_trans_id: str,
+            service_id: str,
+            merchant_trans_id: str,
+            amount: str,
+            action: str,
+            sign_time: str,
+            sign_string: str,
+            merchant_prepare_id: str = None,
     ) -> bool:
         """Verify Click webhook signature.
 
@@ -174,13 +170,13 @@ class ClickService:
             return False
 
     def build_response(
-        self,
-        error: int,
-        error_note: str,
-        click_trans_id: str = None,
-        merchant_trans_id: str = None,
-        merchant_prepare_id: str = None,
-        merchant_confirm_id: str = None
+            self,
+            error: int,
+            error_note: str,
+            click_trans_id: str = None,
+            merchant_trans_id: str = None,
+            merchant_prepare_id: str = None,
+            merchant_confirm_id: str = None,
     ) -> Dict[str, Any]:
         """Build Click webhook response.
 
@@ -212,12 +208,12 @@ class ClickService:
         return response
 
     def prepare_response(
-        self,
-        click_trans_id: str,
-        merchant_trans_id: str,
-        merchant_prepare_id: int,
-        error: int = 0,
-        error_note: str = "Success"
+            self,
+            click_trans_id: str,
+            merchant_trans_id: str,
+            merchant_prepare_id: int,
+            error: int = 0,
+            error_note: str = "Success",
     ) -> Dict[str, Any]:
         """Build response for Prepare action.
 
@@ -236,16 +232,16 @@ class ClickService:
             error_note=error_note,
             click_trans_id=click_trans_id,
             merchant_trans_id=merchant_trans_id,
-            merchant_prepare_id=str(merchant_prepare_id)
+            merchant_prepare_id=str(merchant_prepare_id),
         )
 
     def complete_response(
-        self,
-        click_trans_id: str,
-        merchant_trans_id: str,
-        merchant_confirm_id: int,
-        error: int = 0,
-        error_note: str = "Success"
+            self,
+            click_trans_id: str,
+            merchant_trans_id: str,
+            merchant_confirm_id: int,
+            error: int = 0,
+            error_note: str = "Success",
     ) -> Dict[str, Any]:
         """Build response for Complete action.
 
@@ -264,14 +260,10 @@ class ClickService:
             error_note=error_note,
             click_trans_id=click_trans_id,
             merchant_trans_id=merchant_trans_id,
-            merchant_confirm_id=str(merchant_confirm_id)
+            merchant_confirm_id=str(merchant_confirm_id),
         )
 
-    def error_response(
-        self,
-        error: int,
-        error_note: str
-    ) -> Dict[str, Any]:
+    def error_response(self, error: int, error_note: str) -> Dict[str, Any]:
         """Build error response.
 
         Args:

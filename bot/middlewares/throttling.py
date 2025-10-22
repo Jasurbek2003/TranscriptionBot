@@ -1,9 +1,11 @@
-from typing import Callable, Dict, Any, Awaitable
+import logging
+from typing import Any, Awaitable, Callable, Dict
+
 from aiogram import BaseMiddleware
 from aiogram.types import Message
 from redis.asyncio import Redis
+
 from bot.config import settings
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +23,7 @@ class ThrottlingMiddleware(BaseMiddleware):
             self,
             handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
             event: Message,
-            data: Dict[str, Any]
+            data: Dict[str, Any],
     ) -> Any:
         if not isinstance(event, Message):
             return await handler(event, data)
@@ -62,7 +64,7 @@ class ThrottlingMiddleware(BaseMiddleware):
                 # Send warning message
                 await event.answer(
                     f"⚠️ Too many requests! Please wait {ttl} seconds before sending another message.",
-                    show_alert=True if hasattr(event, 'answer') else False
+                    show_alert=True if hasattr(event, "answer") else False,
                 )
 
                 logger.warning(f"Rate limit exceeded for user {user.id} (@{user.username})")
