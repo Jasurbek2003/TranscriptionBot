@@ -17,7 +17,8 @@ from bot.config import settings
 
 # Initialize Django
 from bot.handlers import webapp  # Import webapp handler
-from bot.handlers import (  # wallet,; history,; admin,  # Commented out - needs Django ORM refactoring
+from bot.handlers import (
+    admin,
     balance,
     errors,
     media,
@@ -137,10 +138,8 @@ async def main():
         dp.include_router(media.router)
         dp.include_router(payment.router)  # Payment handlers with Click and Payme
         dp.include_router(balance.router)
+        dp.include_router(admin.router)  # Admin commands
         dp.include_router(start.router)
-        # dp.include_router(wallet.router)
-        # dp.include_router(history.router)
-        # dp.include_router(admin.router)
         dp.include_router(errors.router)  # Error handler should be last
 
         # Start polling

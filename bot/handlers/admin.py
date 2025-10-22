@@ -1,8 +1,5 @@
 """
-Admin handlers - Currently disabled and needs refactoring to Django ORM.
-
-This module uses SQLAlchemy-style queries that need to be converted to Django ORM.
-The router is commented out in main.py until the migration is complete.
+Admin handlers for managing bot operations.
 """
 
 import logging
@@ -13,6 +10,9 @@ from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
+from asgiref.sync import sync_to_async
+from django.db.models import Count, Sum, Q
+from django.db.models.functions import TruncDate
 
 from bot.config import settings
 from bot.django_setup import TelegramUser, Transaction, Transcription
@@ -37,48 +37,58 @@ async def admin_panel(message: Message):
 
 
 @router.callback_query(F.data == "admin:stats", AdminFilter())
-async def admin_stats(callback: CallbackQuery, session: AsyncSession):  # noqa: F821
-    """Show bot statistics - DISABLED: Needs Django ORM migration"""
-    # Get statistics
+async def admin_stats(callback: CallbackQuery):
+    """Show bot statistics"""
+    # Get statistics using Django ORM
     today = datetime.now().date()
     week_ago = today - timedelta(days=7)
-    month_ago = today - timedelta(days=30)
 
-    # User stats
-    total_users = await session.scalar(select(func.count(TelegramUser.id)))
-    new_users_today = await session.scalar(
-        select(func.count(TelegramUser.id)).where(func.date(TelegramUser.created_at) == today)
-    )
-    new_users_week = await session.scalar(
-        select(func.count(TelegramUser.id)).where(func.date(TelegramUser.created_at) >= week_ago)
-    )
+    @sync_to_async
+    def get_stats():
+        # User stats
+        total_users = TelegramUser.objects.count()
+        new_users_today = TelegramUser.objects.filter(created_at__date=today).count()
+        new_users_week = TelegramUser.objects.filter(created_at__date__gte=week_ago).count()
 
-    # Transaction stats
-    total_revenue = (
-            await session.scalar(
-                select(func.sum(Transaction.amount)).where(
-                    Transaction.type == "debit", Transaction.status == "completed"
-                )
-            )
-            or 0
-    )
+        # Transaction stats
+        total_revenue = (
+            Transaction.objects.filter(
+                type="debit",
+                status="completed"
+            ).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        )
 
-    revenue_today = (
-            await session.scalar(
-                select(func.sum(Transaction.amount)).where(
-                    Transaction.type == "debit",
-                    Transaction.status == "completed",
-                    func.date(Transaction.created_at) == today,
-                )
-            )
-            or 0
-    )
+        revenue_today = (
+            Transaction.objects.filter(
+                type="debit",
+                status="completed",
+                created_at__date=today
+            ).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        )
 
-    # Transcription stats
-    total_transcriptions = await session.scalar(select(func.count(Transcription.id)))
-    transcriptions_today = await session.scalar(
-        select(func.count(Transcription.id)).where(func.date(Transcription.created_at) == today)
-    )
+        # Transcription stats
+        total_transcriptions = Transcription.objects.count()
+        transcriptions_today = Transcription.objects.filter(created_at__date=today).count()
+
+        return {
+            "total_users": total_users,
+            "new_users_today": new_users_today,
+            "new_users_week": new_users_week,
+            "total_revenue": total_revenue,
+            "revenue_today": revenue_today,
+            "total_transcriptions": total_transcriptions,
+            "transcriptions_today": transcriptions_today,
+        }
+
+    stats = await get_stats()
+
+    total_users = stats["total_users"]
+    new_users_today = stats["new_users_today"]
+    new_users_week = stats["new_users_week"]
+    total_revenue = stats["total_revenue"]
+    revenue_today = stats["revenue_today"]
+    total_transcriptions = stats["total_transcriptions"]
+    transcriptions_today = stats["transcriptions_today"]
 
     text = (
         "📊 <b>Bot Statistics</b>\n\n"
@@ -110,59 +120,67 @@ async def admin_users(callback: CallbackQuery, state: FSMContext):
 
 
 @router.message(AdminStates.searching_user, AdminFilter())
-async def search_user(message: Message, state: FSMContext, session: AsyncSession):
+async def search_user(message: Message, state: FSMContext):
     """Search for user"""
     search_query = message.text.strip()
 
-    if search_query.startswith("@"):
-        # Search by username
-        username = search_query[1:]
-        stmt = select(TelegramUser).where(TelegramUser.telegram_username == username)
-    else:
-        try:
-            # Search by ID
-            user_id = int(search_query)
-            stmt = select(TelegramUser).where(TelegramUser.telegram_id == user_id)
-        except ValueError:
-            await message.answer("❌ Invalid user ID or username")
-            return
+    @sync_to_async
+    def find_user():
+        if search_query.startswith("@"):
+            # Search by username
+            username = search_query[1:]
+            return TelegramUser.objects.filter(username=username).first()
+        else:
+            try:
+                # Search by ID
+                user_id = int(search_query)
+                return TelegramUser.objects.filter(telegram_id=user_id).first()
+            except ValueError:
+                return None
 
-    result = await session.execute(stmt)
-    user = result.scalar_one_or_none()
+    user = await find_user()
 
     if not user:
-        await message.answer("❌ User not found")
+        await message.answer("❌ User not found or invalid ID/username")
         return
 
-    # Get user's wallet
-    wallet = await user.get_wallet(session)
+    @sync_to_async
+    def get_user_stats(user):
+        from apps.wallet.models import Wallet
 
-    # Get user statistics
-    trans_count = await session.scalar(
-        select(func.count(Transcription.id)).where(Transcription.user_id == user.id)
-    )
+        # Get user's wallet
+        wallet = Wallet.objects.filter(user=user).first()
 
-    total_spent = (
-            await session.scalar(
-                select(func.sum(Transaction.amount)).where(
-                    Transaction.user_id == user.id, Transaction.type == "debit"
-                )
-            )
-            or 0
-    )
+        # Get user statistics
+        trans_count = Transcription.objects.filter(user=user).count()
+
+        total_spent = (
+            Transaction.objects.filter(
+                user=user,
+                type="debit"
+            ).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        )
+
+        return {
+            "wallet_balance": wallet.balance if wallet else Decimal("0.00"),
+            "trans_count": trans_count,
+            "total_spent": total_spent,
+        }
+
+    stats = await get_user_stats(user)
 
     text = (
         f"👤 <b>User Information</b>\n\n"
         f"ID: {user.telegram_id}\n"
-        f"Username: @{user.telegram_username}\n"
+        f"Username: @{user.username or 'N/A'}\n"
         f"Name: {user.first_name} {user.last_name or ''}\n"
-        f"Language: {user.language_code}\n"
+        f"Language: {user.language_code or 'N/A'}\n"
         f"Registered: {user.created_at.strftime('%Y-%m-%d')}\n\n"
         f"<b>Wallet:</b>\n"
-        f"Balance: {wallet.balance:.2f} UZS\n"
-        f"Total spent: {total_spent:.2f} UZS\n\n"
+        f"Balance: {stats['wallet_balance']:.2f} UZS\n"
+        f"Total spent: {stats['total_spent']:.2f} UZS\n\n"
         f"<b>Activity:</b>\n"
-        f"Transcriptions: {trans_count}\n"
+        f"Transcriptions: {stats['trans_count']}\n"
         f"Last activity: {user.last_activity.strftime('%Y-%m-%d %H:%M') if user.last_activity else 'Never'}"
     )
 
@@ -182,14 +200,16 @@ async def admin_broadcast(callback: CallbackQuery, state: FSMContext):
 
 
 @router.message(AdminStates.entering_broadcast_message, SuperAdminFilter())
-async def broadcast_message(message: Message, state: FSMContext, session: AsyncSession):
+async def broadcast_message(message: Message, state: FSMContext):
     """Send broadcast to all users"""
     broadcast_text = message.text
 
     # Get all users
-    stmt = select(TelegramUser.telegram_id)
-    result = await session.execute(stmt)
-    user_ids = [row[0] for row in result]
+    @sync_to_async
+    def get_all_user_ids():
+        return list(TelegramUser.objects.values_list('telegram_id', flat=True))
+
+    user_ids = await get_all_user_ids()
 
     # Send broadcast
     success = 0
@@ -236,7 +256,7 @@ def is_admin(user_id: int) -> bool:
 
 
 @router.message(Command("topup_user"), AdminFilter())
-async def admin_topup_user(message: Message, user, session: AsyncSession):
+async def admin_topup_user(message: Message, user):
     """Admin command to top up user balance.
 
     Usage: /topup_user <user_id> <amount> [description]
@@ -270,16 +290,18 @@ async def admin_topup_user(message: Message, user, session: AsyncSession):
             return
 
         # Find target user
-        stmt = select(TelegramUser).where(TelegramUser.telegram_id == target_user_id)
-        result = await session.execute(stmt)
-        target_user = result.scalar_one_or_none()
+        @sync_to_async
+        def find_target_user(user_id):
+            return TelegramUser.objects.filter(telegram_id=user_id).first()
+
+        target_user = await find_target_user(target_user_id)
 
         if not target_user:
             await message.answer(f"❌ User with ID {target_user_id} not found!")
             return
 
         # Initialize wallet service and add balance
-        wallet_service = WalletService(session)
+        wallet_service = WalletService()
 
         # Get current balance
         balance_info = await wallet_service.get_balance_info(target_user)
@@ -294,7 +316,6 @@ async def admin_topup_user(message: Message, user, session: AsyncSession):
         )
 
         if result.success:
-            await session.commit()
 
             # Send success message to admin
             await message.answer(
@@ -333,7 +354,7 @@ async def admin_topup_user(message: Message, user, session: AsyncSession):
 
 
 @router.message(Command("check_user"), AdminFilter())
-async def admin_check_user(message: Message, user, session: AsyncSession):
+async def admin_check_user(message: Message, user):
     """Admin command to check user information.
 
     Usage: /check_user <user_id>
@@ -354,16 +375,18 @@ async def admin_check_user(message: Message, user, session: AsyncSession):
         target_user_id = int(parts[1])
 
         # Find target user
-        stmt = select(TelegramUser).where(TelegramUser.telegram_id == target_user_id)
-        result = await session.execute(stmt)
-        target_user = result.scalar_one_or_none()
+        @sync_to_async
+        def find_target_user(user_id):
+            return TelegramUser.objects.filter(telegram_id=user_id).first()
+
+        target_user = await find_target_user(target_user_id)
 
         if not target_user:
             await message.answer(f"❌ User with ID {target_user_id} not found!")
             return
 
         # Get wallet information
-        wallet_service = WalletService(session)
+        wallet_service = WalletService()
         balance_info = await wallet_service.get_balance_info(target_user)
 
         # Get recent transactions
